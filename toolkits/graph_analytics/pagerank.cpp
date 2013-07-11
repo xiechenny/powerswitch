@@ -37,7 +37,7 @@ size_t ITERATIONS = 0;
 bool USE_DELTA_CACHE = false;
 
 // The vertex data is just the pagerank value (a double)
-typedef double vertex_data_type;
+typedef float vertex_data_type;
 
 // There is no edge data in the pagerank application
 typedef graphlab::empty edge_data_type;
@@ -74,9 +74,9 @@ void init_vertex(graph_type::vertex_type& vertex) { vertex.data() = 1; }
  * graphlab::IS_POD_TYPE it must implement load and save functions.
  */
 class pagerank :
-  public graphlab::ivertex_program<graph_type, double> {
+  public graphlab::ivertex_program<graph_type, float> {
 
-  double last_change;
+  float last_change;
 public:
 
   /**
@@ -89,7 +89,7 @@ public:
 
 
   /* Gather the weighted rank of the adjacent page   */
-  double gather(icontext_type& context, const vertex_type& vertex,
+  float gather(icontext_type& context, const vertex_type& vertex,
                edge_type& edge) const {
     return (edge.source().data() / edge.source().num_out_edges());
   }
@@ -98,7 +98,7 @@ public:
   void apply(icontext_type& context, vertex_type& vertex,
              const gather_type& total) {
 
-    const double newval = (1.0 - RESET_PROB) * total + RESET_PROB;
+    const float newval = (1.0 - RESET_PROB) * total + RESET_PROB;
     last_change = (newval - vertex.data());
     vertex.data() = newval;
     if (ITERATIONS) context.signal(vertex);
@@ -160,10 +160,10 @@ struct pagerank_writer {
 }; // end of pagerank writer
 
 
-double map_rank(const graph_type::vertex_type& v) { return v.data(); }
+float map_rank(const graph_type::vertex_type& v) { return v.data(); }
 
 
-double pagerank_sum(graph_type::vertex_type v) {
+float pagerank_sum(graph_type::vertex_type v) {
   return v.data();
 }
 
@@ -171,7 +171,8 @@ int main(int argc, char** argv) {
   // Initialize control plain using mpi
   graphlab::mpi_tools::init(argc, argv);
   graphlab::distributed_control dc;
-  global_logger().set_log_level(LOG_INFO);
+  global_logger().set_log_level(LOG_NONE);
+  //global_logger().set_log_level(LOG_INFO);
 
   // Parse command line options -----------------------------------------------
   graphlab::command_line_options clopts("PageRank algorithm.");
@@ -249,12 +250,12 @@ int main(int argc, char** argv) {
   graphlab::omni_engine<pagerank> engine(dc, graph, exec_type, clopts);
   engine.signal_all();
   engine.start();
-  const double runtime = engine.elapsed_seconds();
+  const float runtime = engine.elapsed_seconds();
   dc.cout() << "Finished Running engine in " << runtime
             << " seconds." << std::endl;
 
 
-  const double total_rank = graph.map_reduce_vertices<double>(map_rank);
+  const float total_rank = graph.map_reduce_vertices<float>(map_rank);
   std::cout << "Total rank: " << total_rank << std::endl;
 
   // Save the final graph -----------------------------------------------------
@@ -265,7 +266,7 @@ int main(int argc, char** argv) {
                false);   // do not save edges
   }
 
-  double totalpr = graph.map_reduce_vertices<double>(pagerank_sum);
+  float totalpr = graph.map_reduce_vertices<float>(pagerank_sum);
   std::cout << "Totalpr = " << totalpr << "\n";
 
   // Tear-down communication layer and quit -----------------------------------
