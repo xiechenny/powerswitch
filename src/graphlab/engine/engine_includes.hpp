@@ -26,6 +26,8 @@
 #include <graphlab/engine/iengine.hpp>
 #include <graphlab/engine/synchronous_engine.hpp>
 #include <graphlab/engine/async_consistent_engine.hpp>
+//xie insert : adaptive engine
+#include <graphlab/engine/xasync_consistent_engine.hpp>
 #include <graphlab/engine/omni_engine.hpp>
 
 #include <graphlab/engine/execution_status.hpp>

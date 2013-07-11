@@ -171,8 +171,8 @@ int main(int argc, char** argv) {
   // Initialize control plain using mpi
   graphlab::mpi_tools::init(argc, argv);
   graphlab::distributed_control dc;
-  global_logger().set_log_level(LOG_NONE);
-  //global_logger().set_log_level(LOG_INFO);
+  //global_logger().set_log_level(LOG_NONE);
+  global_logger().set_log_level(LOG_INFO);
 
   // Parse command line options -----------------------------------------------
   graphlab::command_line_options clopts("PageRank algorithm.");
@@ -249,10 +249,15 @@ int main(int argc, char** argv) {
   // Running The Engine -------------------------------------------------------
   graphlab::omni_engine<pagerank> engine(dc, graph, exec_type, clopts);
   engine.signal_all();
+
+	//xie insert
+	graphlab::timer timer;
+  	timer.start();
+  
   engine.start();
-  const float runtime = engine.elapsed_seconds();
+  const float runtime = timer.current_time_millis();//xie modify :	engine.elapsed_seconds();
   dc.cout() << "Finished Running engine in " << runtime
-            << " seconds." << std::endl;
+            << " millis." << std::endl;
 
 
   const float total_rank = graph.map_reduce_vertices<float>(map_rank);

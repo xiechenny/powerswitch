@@ -31,6 +31,7 @@
 #include <graphlab/engine/iengine.hpp>
 #include <graphlab/engine/synchronous_engine.hpp>
 #include <graphlab/engine/async_consistent_engine.hpp>
+#include <graphlab/engine/xasync_consistent_engine.hpp>
 
 namespace graphlab {
 
@@ -136,7 +137,11 @@ namespace graphlab {
      */
     typedef async_consistent_engine<VertexProgram> async_consistent_engine_type;
 
-
+	//xie insert
+	/*
+	* \brief the type of self-adaptive engine
+	*/
+	typedef xasync_consistent_engine<VertexProgram> xasync_consistent_engine_type;
 
   private:
 
@@ -193,7 +198,11 @@ namespace graphlab {
       } else if(engine_type == "async" || engine_type == "asynchronous") {
         logstream(LOG_INFO) << "Using the Synchronous engine." << std::endl;
         engine_ptr = new async_consistent_engine_type(dc, graph, new_options);
-      } else {
+      } else if(engine_type == "xasync" || engine_type == "xasynchronous"){
+		logstream(LOG_INFO) << "Using the X-adaptive engine." << std::endl;
+        engine_ptr = new xasync_consistent_engine_type(dc, graph, new_options);
+	  }
+	  else {
         logstream(LOG_FATAL) << "Invalid engine type: " << engine_type << std::endl;
       }
     } // end of constructor
