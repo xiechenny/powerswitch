@@ -28,9 +28,9 @@
 // #include <graphlab/macros_def.hpp>
 
 // Global random reset probability
-double RESET_PROB = 0.15;
+float RESET_PROB = 0.15;
 
-double TOLERANCE = 1.0E-2;
+float TOLERANCE = 1.0E-2;
 
 size_t ITERATIONS = 0;
 

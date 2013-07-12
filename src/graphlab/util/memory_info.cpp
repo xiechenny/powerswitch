@@ -55,7 +55,7 @@ namespace graphlab {
 
     size_t allocated_bytes() {
       size_t allocated_size(0);
-#ifdef HAS_TCMALLOC
+/*#ifdef HAS_TCMALLOC
       MallocExtension::instance()->
         GetNumericProperty("generic.current_allocated_bytes",
                            &allocated_size);
@@ -63,13 +63,13 @@ namespace graphlab {
       logstream_once(LOG_WARNING) <<
         "memory_info::allocated_bytes() requires tcmalloc" << std::endl;
 #endif
-      return allocated_size;
+ */     return allocated_size;
     } // end of allocated bytes
 
 
 
     void print_usage(const std::string& label) {
-#ifdef HAS_TCMALLOC
+/*#ifdef HAS_TCMALLOC
         const double BYTES_TO_MB = double(1) / double(1024 * 1024);
         std::cout
           << "Memory Info: " << label << std::endl
@@ -82,10 +82,10 @@ namespace graphlab {
           << "Unable to print memory info for: " << label << ". "
           << "No memory extensions api available." << std::endl;
 #endif
-    } // end of print_usage
+*/    } // end of print_usage
 
     void log_usage(const std::string& label) {
-#ifdef HAS_TCMALLOC
+/*#ifdef HAS_TCMALLOC
         const double BYTES_TO_MB = double(1) / double(1024 * 1024);
         logstream(LOG_INFO)
           << "Memory Info: " << label
@@ -97,7 +97,7 @@ namespace graphlab {
           << "Unable to print memory info for: " << label << ". "
           << "No memory extensions api available." << std::endl;
 #endif
-    } // end of log usage
+ */   } // end of log usage
 
 
   }; // end of namespace memory info
