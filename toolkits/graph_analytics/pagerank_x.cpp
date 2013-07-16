@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
   // Initialize control plain using mpi
   graphlab::mpi_tools::init(argc, argv);
   graphlab::distributed_control dc;
-  global_logger().set_log_level(LOG_NONE);
+  global_logger().set_log_level(LOG_INFO);
 
   // Parse command line options -----------------------------------------------
   graphlab::command_line_options clopts("PageRank algorithm.");
