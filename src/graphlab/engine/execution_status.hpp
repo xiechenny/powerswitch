@@ -46,7 +46,8 @@ namespace graphlab {
       FORCED_ABORT,     /**< the engine was stopped by calling force
                                 abort */
       
-      EXCEPTION        /**< the engine was stopped by an exception */
+      EXCEPTION,        /**< the engine was stopped by an exception */
+      MODE_SWITCH		/* xie insert mode switch */
     }; // end of enum
     
     // Convenience function.

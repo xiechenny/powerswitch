@@ -59,8 +59,10 @@
 
 #include <graphlab/macros_def.hpp>
 
+//xie insert define
 #define X_SYNC 1
 #define X_ASYNC 2
+#define X_THRESHOLD 0.01
 
 namespace graphlab {
 
@@ -419,7 +421,7 @@ namespace graphlab {
     execution_status::status_enum termination_reason;
 
     std::vector<mutex> aggregation_lock;
-    std::vector<std::deque<std::string> > aggregation_queue;
+    std::vector<std::deque<std::string> >  aggregation_queue;
 
 
 	/*
@@ -441,6 +443,7 @@ namespace graphlab {
 	graphlab::barrier thread_barrier;
 	
 	size_t max_iterations;
+	bool has_max_iterations;
 	
 	/**
 	 * \brief A snapshot is taken every this number of iterations.
@@ -506,8 +509,8 @@ namespace graphlab {
 	/**
 	 * \brief Vector of messages associated with each vertex.
 	 */
-	std::vector<message_type> messages;  
-	
+	std::vector<message_type> messages;
+
 	/**
 	 * \brief Bit indicating whether a message is present for each vertex.
 	 */
@@ -535,6 +538,18 @@ namespace graphlab {
 	 * \ref graphlab::synchronous_engine::vlocks.
 	 */
 	dense_bitset has_gather_accum;
+
+	//xie insert:  mark the active node when engine changes.
+	dense_bitset next_mode_active_vertex;
+
+	//xie insert:  mark the active node in ASYNC engine 
+	dense_bitset asy_now_active_vertex;
+
+	//xie insert: count msg
+	atomic<size_t> each_iteration_nmsg;
+	atomic<size_t> each_iteration_signal;
+	bool	first_time_start;
+	
 	
 	/**
 	 * \brief A bit (for master vertices) indicating if that vertex is active
@@ -701,7 +716,30 @@ namespace graphlab {
       aggregation_queue.resize(opts.get_ncpus());
       std::vector<std::string> keys = opts.get_engine_args().get_option_keys();
       foreach(std::string opt, keys) {
-        if (opt == "timeout") {
+	  	if (opt == "max_iterations") {
+	        opts.get_engine_args().get_option("max_iterations", max_iterations);
+			//xie insert
+			has_max_iterations = true;
+			if (rmi.procid() == 0)
+	          logstream(LOG_EMPH) << "Engine Option: max_iterations = "
+	            << max_iterations << std::endl;
+      	} 
+		//xie insert
+		else if(opt == "start_async") {
+			bool start_a;
+			opts.get_engine_args().get_option("start_async", start_a);
+			if(start_a){
+				current_engine = X_ASYNC;
+				if (rmi.procid() == 0)
+		          logstream(LOG_EMPH) << "Engine Option: start with ASYNC mode " << std::endl;
+				}
+			}
+		else if (opt == "sched_allv") {
+	        opts.get_engine_args().get_option("sched_allv", sched_allv);
+	        if (rmi.procid() == 0)
+	          logstream(LOG_EMPH) << "Engine Option: sched_allv = "
+	            << sched_allv << std::endl;
+      	} else if (opt == "timeout") {
           opts.get_engine_args().get_option("timeout", timed_termination);
           if (rmi.procid() == 0)
             logstream(LOG_EMPH) << "Engine Option: timeout = " << timed_termination << std::endl;
@@ -947,12 +985,12 @@ namespace graphlab {
 
 
 
-    void xsignal(vertex_id_type gvid,
+    /*void xsignal(vertex_id_type gvid,
                 const message_type& message = message_type()) {
       rmi.barrier();
       xinternal_signal_gvid(gvid, message);
       rmi.barrier();
-    }
+   	}*/
 
 
     void xsignal_all(const message_type& message = message_type(),
@@ -989,6 +1027,37 @@ namespace graphlab {
       rmi.barrier();
     }
 
+	void x_inner_signal_vset(const std::string& order = "shuffle") {            
+      //logstream(LOG_DEBUG) << rmi.procid() << ": Schedule ~~~~~~~~" << std::endl;
+
+	  // allocate a vector with all the local owned vertices
+      // and schedule all of them.
+      std::vector<vertex_id_type> vtxs;
+      vtxs.reserve(graph.num_local_own_vertices());
+      for(lvid_type lvid = 0;
+          lvid < graph.get_local_graph().num_vertices();
+          ++lvid) {
+        if (graph.l_vertex(lvid).owner() == rmi.procid() &&
+            next_mode_active_vertex.get(lvid)) {
+          vtxs.push_back(lvid);
+        }
+      }
+
+      if(order == "shuffle") {
+        graphlab::random::shuffle(vtxs.begin(), vtxs.end());
+      }
+	  
+      foreach(lvid_type lvid, vtxs) {
+	  	//logstream(LOG_INFO) << rmi.procid() << ": Schedule ~~~~~~~~ "<<lvid << std::endl;
+        double priority;
+        xmessages.add(lvid, messages[lvid], &priority);
+		// xie insert : clear messages
+		messages[lvid] = message_type();
+		
+        scheduler_ptr->schedule(lvid, priority);
+      }
+      rmi.barrier();
+    }
 
   private: 
 
@@ -1010,7 +1079,7 @@ namespace graphlab {
     }
 
     void xset_endgame_mode() {
-        if (!endgame_mode) logstream(LOG_EMPH) << "Endgame mode\n";
+        //if (!endgame_mode) logstream(LOG_EMPH) << "Endgame mode\n";
         endgame_mode = true;
         rmi.dc().set_fast_track_requests(true);
     } 
@@ -1039,7 +1108,7 @@ namespace graphlab {
         logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<  ": "
                              << "\tTermination Double Checked" << std::endl;
 
-        if (!endgame_mode) logstream(LOG_EMPH) << "Endgame mode\n";
+        if((rmi.procid()==0)&&(!endgame_mode)) logstream(LOG_EMPH) << "Endgame mode\n";
         endgame_mode = true;
         // put everyone in endgame
         for (procid_t i = 0;i < rmi.dc().numprocs(); ++i) {
@@ -1404,9 +1473,17 @@ namespace graphlab {
     execution_status::status_enum xstart() {
 	  //xie insert
 	  current_engine = X_ASYNC;
+	  //signal active vertex:  first signal then clear   the "next_mode_active_vertex" is just a pointer, point to asy_now_active_vertex or active_superstep
+	  if(first_time_start)	
+		first_time_start = false;
+	  else 
+		x_inner_signal_vset();
+	  asy_now_active_vertex.clear();
+
 	  
       bool old_fasttrack = rmi.dc().set_fast_track_requests(false);
-      logstream(LOG_INFO) << "Spawning " << nfibers << " threads" << std::endl;
+      if (rmi.procid() == 0)
+	  	logstream(LOG_INFO) << "Spawning " << nfibers << " threads" << std::endl;
       ASSERT_TRUE(scheduler_ptr != NULL);
       consensus->reset();
 
@@ -1498,6 +1575,7 @@ namespace graphlab {
      *
      * @return The reason for termination
      */
+	execution_status::status_enum sstart();
     execution_status::status_enum start();
 
     // documentation inherited from iengine
@@ -1857,6 +1935,7 @@ namespace graphlab {
 
 	// xie insert: should set start mode, it decides how to receive the start signal
 	current_engine = X_SYNC;
+	has_max_iterations = false;	
 	 
     // Process any additional options
     std::vector<std::string> keys = opts.get_engine_args().get_option_keys();
@@ -1870,43 +1949,7 @@ namespace graphlab {
     timed_termination = (size_t)(-1);
     termination_reason = execution_status::UNSET;
 
-	foreach(std::string opt, keys) {
-      if (opt == "max_iterations") {
-        opts.get_engine_args().get_option("max_iterations", max_iterations);
-        if (rmi.procid() == 0)
-          logstream(LOG_EMPH) << "Engine Option: max_iterations = "
-            << max_iterations << std::endl;
-      } else if (opt == "timeout") {
-        opts.get_engine_args().get_option("timeout", timeout);
-        if (rmi.procid() == 0)
-          logstream(LOG_EMPH) << "Engine Option: timeout = "
-            << timeout << std::endl;
-      } else if (opt == "use_cache") {
-        opts.get_engine_args().get_option("use_cache", use_cache);
-        if (rmi.procid() == 0)
-          logstream(LOG_EMPH) << "Engine Option: use_cache = "
-            << use_cache << std::endl;
-      } else if (opt == "snapshot_interval") {
-        opts.get_engine_args().get_option("snapshot_interval", snapshot_interval);
-        if (rmi.procid() == 0)
-          logstream(LOG_EMPH) << "Engine Option: snapshot_interval = "
-            << snapshot_interval << std::endl;
-      } else if (opt == "snapshot_path") {
-        opts.get_engine_args().get_option("snapshot_path", snapshot_path);
-        if (rmi.procid() == 0)
-          logstream(LOG_EMPH) << "Engine Option: snapshot_path = "
-            << snapshot_path << std::endl;
-      } else if (opt == "sched_allv") {
-        opts.get_engine_args().get_option("sched_allv", sched_allv);
-        if (rmi.procid() == 0)
-          logstream(LOG_EMPH) << "Engine Option: sched_allv = "
-            << sched_allv << std::endl;
-      } else {
-        logstream(LOG_FATAL) << "Unexpected Engine Option: " << opt << std::endl;
-      }
-    }
-
-	//xie insert : set async opts
+	//xie insert : set sync & async opts
 	xset_options(opts);
 	
     if (snapshot_interval >= 0 && snapshot_path.length() == 0) {
@@ -1951,6 +1994,11 @@ namespace graphlab {
     has_cache.clear();
     active_superstep.clear();
     active_minorstep.clear();
+	//xie insert clear();
+	asy_now_active_vertex.clear();
+	first_time_start = true;
+	each_iteration_signal = 0;
+	each_iteration_nmsg = 0;
   }
 
 
@@ -1965,6 +2013,9 @@ namespace graphlab {
     // Allocate messages and message bitset
     messages.resize(graph.num_local_vertices(), message_type());
     has_message.resize(graph.num_local_vertices());
+	//xie insert resize();
+	asy_now_active_vertex.resize(graph.num_local_vertices());
+	
     // Allocate gather accumulators and accumulator bitset
     gather_accum.resize(graph.num_local_vertices(), gather_type());
     has_gather_accum.resize(graph.num_local_vertices());
@@ -2020,11 +2071,13 @@ namespace graphlab {
 	    rmi.barrier();
 	    internal_signal_rpc(gvid, message);
 	    rmi.barrier();
-  		}
+  	}
 	// xie insert ASYNC
-	else if(current_engine==X_ASYNC){
-		xsignal(gvid, message);
-		}
+	else {
+	  rmi.barrier();
+      xinternal_signal_gvid(gvid, message);
+      rmi.barrier();
+	}
   } // end of signal
 
   template<typename VertexProgram>
@@ -2041,7 +2094,7 @@ namespace graphlab {
 	    }
 	}
 	// xie insert: ASYNC
-	else if(current_engine==X_ASYNC){
+	else{
 		xsignal_all(message, order);
 	}
   } // end of signal all
@@ -2062,7 +2115,7 @@ namespace graphlab {
 	    }
     }
 	// xie insert: ASYNC
-	else if (current_engine==X_ASYNC){
+	else {
 		xsignal_vset(vset, message, order);
 	}
   } // end of signal all
@@ -2075,17 +2128,22 @@ namespace graphlab {
     // xie insert: SYNC
     if(current_engine==X_SYNC){
 		const lvid_type lvid = vertex.local_id();
+		
 		vlocks[lvid].lock();
+		
 		if( has_message.get(lvid) ) {
 			messages[lvid] += message;
 		} else {
 		    messages[lvid] = message;
 		    has_message.set_bit(lvid);
+
+			//xie insert;
+			asy_now_active_vertex.set_bit(lvid);
 		}
 		vlocks[lvid].unlock();
     	}
 	// xie insert: ASYNC
-	else if (current_engine==X_ASYNC){
+	else{
 		xinternal_signal(vertex,message);
 	}
   } // end of internal_signal
@@ -2103,7 +2161,7 @@ namespace graphlab {
 	    }
 	}
 	// xie insert: ASYNC
-	else if (current_engine==X_ASYNC){
+	else {
 		xinternal_signal_broadcast(gvid,message);
 	}
   } // end of internal_signal_broadcast
@@ -2117,6 +2175,7 @@ namespace graphlab {
     if (graph.is_master(gvid)) {
       internal_signal(graph.vertex(gvid), message);
     }
+	
   } // end of internal_signal_rpc
 
 
@@ -2129,7 +2188,7 @@ namespace graphlab {
     const bool caching_enabled = !gather_cache.empty();
     if(caching_enabled) {
       //xie insert: confirm the implementations in cache are the same in both SYNC and ASYNC 
-	  ASSERT_TRUE(use_cache);
+	  //ASSERT_TRUE(use_cache);
       const lvid_type lvid = vertex.local_id();
       vlocks[lvid].lock();
       if( has_cache.get(lvid) ) {
@@ -2144,7 +2203,7 @@ namespace graphlab {
     }
 	else{
 		//xie insert: confirm the implementations in cache are the same in both SYNC and ASYNC 
-		ASSERT_FALSE(use_cache);
+		//ASSERT_FALSE(use_cache);
 	}
   } // end of post_delta
 
@@ -2185,12 +2244,205 @@ namespace graphlab {
     return allocated_memory;
   } // compute the total memory usage of the GraphLab system
 
+  template<typename VertexProgram> execution_status::status_enum
+	xadaptive_engine<VertexProgram>::sstart() {
+	  //xie insert
+	  current_engine = X_SYNC;
+	  if(first_time_start)
+	  	first_time_start = false;
+	  else{
+	  	//signal 
+	  	}
+	  
+	  // xie insert: SYNC engine compution start
+	  aggregator.start();
+	  rmi.barrier();
+  
+	  /* xie delete: temporary not support it 
+	  if (snapshot_interval == 0) {
+		graph.save_binary(snapshot_path);
+	  }*/
+  
+	  float last_print = -5;
+	  if (rmi.procid() == 0) {
+		logstream(LOG_EMPH) << "Iteration counter will only output every 5 seconds."
+						  << std::endl;
+	  }
+	  // Program Main loop ====================================================
+	  while(iteration_counter <= max_iterations && !force_abort ) {
+  
+		// Check first to see if we are out of time
+		if(timeout != 0 && timeout < elapsed_seconds()) {
+		  termination_reason = execution_status::TIMEOUT;
+		  break;
+		}
+  
+		bool print_this_round = (elapsed_seconds() - last_print) >= 5;
+  
+		if(rmi.procid() == 0 && print_this_round) {
+		  logstream(LOG_EMPH)
+			<< rmi.procid() << ": Starting iteration: " << iteration_counter
+			<< std::endl;
+		  last_print = elapsed_seconds();
+		}
+		// Reset Active vertices ----------------------------------------------
+		// Clear the active super-step and minor-step bits which will
+		// be set upon receiving messages
+		active_superstep.clear(); active_minorstep.clear();
+		has_gather_accum.clear();
+		rmi.barrier();
+  
+		// Exchange Messages --------------------------------------------------
+		// Exchange any messages in the local message vectors
+		// if (rmi.procid() == 0) std::cout << "Exchange messages..." << std::endl;
+		run_synchronous( &xadaptive_engine::exchange_messages );
+		/**
+		 * Post conditions:
+		 *	 1) only master vertices have messages
+		 */
+  
+		// Receive Messages ---------------------------------------------------
+		// Receive messages to master vertices and then synchronize
+		// vertex programs with mirrors if gather is required
+		//
+  
+		// if (rmi.procid() == 0) std::cout << "Receive messages..." << std::endl;
+		num_active_vertices = 0;
+		run_synchronous( &xadaptive_engine::receive_messages );
+		if (sched_allv) {
+		  active_minorstep.fill();
+		}
+		has_message.clear();
+		/**
+		 * Post conditions:
+		 *	 1) there are no messages remaining
+		 *	 2) All masters that received messages have their
+		 *		active_superstep bit set
+		 *	 3) All masters and mirrors that are to participate in the
+		 *		next gather phases have their active_minorstep bit
+		 *		set.
+		 *	 4) num_active_vertices is the number of vertices that
+		 *		received messages.
+		 */
+  
+		// Check termination condition	---------------------------------------
+		size_t total_active_vertices = num_active_vertices;
+		//size_t local_active_vertices = num_active_vertices;	//xie try to see whether balance on every machine.
+		
+		rmi.all_reduce(total_active_vertices);
+		if (rmi.procid() == 0 && print_this_round)
+		  logstream(LOG_EMPH)
+			<< "\tActive vertices: " << total_active_vertices << std::endl;
+		if(total_active_vertices == 0 ) {
+		  termination_reason = execution_status::TASK_DEPLETION;
+		  break;
+		}
+
+  		//xie insert
+  		//================================================================
+		//xie insert: when iteration_counter==max_iterations, get the active vertex set and break;
+		size_t total_signal_number = each_iteration_signal;
+		size_t total_msg_number = each_iteration_nmsg;
+		rmi.all_reduce(total_signal_number);
+		rmi.all_reduce(total_msg_number);
+		
+		/*logstream(LOG_EMPH)<< rmi.procid() << ":iter " << iteration_counter
+			//<<" , max_iterations "<<max_iterations
+			<<" , total_iter_msg "<<total_msg_number
+			//<<" , each_iter_sig "<<each_iteration_signal
+			<<" , total_sig_num "<<total_signal_number
+			//<<" , local_active_vertex "<<local_active_vertices
+			<<" , total_act_ver "<<total_active_vertices
+			<<std::endl;*/
+
+		// clear counters
+		each_iteration_signal = 0;
+		each_iteration_nmsg = 0;
+		
+		float fac = 1;
+		if(!has_max_iterations)
+			fac = ((float)total_active_vertices)/graph.num_vertices();
+		if((iteration_counter==max_iterations)||(fac<=X_THRESHOLD)){
+			if (rmi.procid() == 0)
+				logstream(LOG_EMPH)<< rmi.procid() << ": iterations "<< iteration_counter<<", fac "<<fac
+					<<", tol_active "<<total_active_vertices<<std::endl;
+			
+			// if iteration_counter==0, next_mode_active_vertex has been set to initial signal set.
+			if(iteration_counter==0)
+				next_mode_active_vertex = asy_now_active_vertex;
+			else
+				next_mode_active_vertex = active_superstep;
+			
+			termination_reason = execution_status::MODE_SWITCH;
+			break;
+		}
+		//logstream(LOG_EMPH)<< rmi.procid() << ": total_active_vertices "<< total_active_vertices <<std::endl;
+  		//================================================================
+  		//xie insert end
+  		
+		
+		// Execute gather operations-------------------------------------------
+		// Execute the gather operation for all vertices that are active
+		// in this minor-step (active-minorstep bit set).
+		// if (rmi.procid() == 0) std::cout << "Gathering..." << std::endl;
+		run_synchronous( &xadaptive_engine::execute_gathers );
+		// Clear the minor step bit since only super-step vertices
+		// (only master vertices are required to participate in the
+		// apply step)
+		active_minorstep.clear(); // rmi.barrier();
+		/**
+		 * Post conditions:
+		 *	 1) gather_accum for all master vertices contains the
+		 *		result of all the gathers (even if they are drawn from
+		 *		cache)
+		 *	 2) No minor-step bits are set
+		 */
+  
+		// Execute Apply Operations -------------------------------------------
+		// Run the apply function on all active vertices
+		// if (rmi.procid() == 0) std::cout << "Applying..." << std::endl;
+	  run_synchronous( &xadaptive_engine::execute_applys );
+		/**
+		 * Post conditions:
+		 *	 1) any changes to the vertex data have been synchronized
+		 *		with all mirrors.
+		 *	 2) all gather accumulators have been cleared
+		 *	 3) If a vertex program is participating in the scatter
+		 *		phase its minor-step bit has been set to active (both
+		 *		masters and mirrors) and the vertex program has been
+		 *		synchronized with the mirrors.
+		 */
+  
+  
+	  // Execute Scatter Operations -----------------------------------------
+	  // Execute each of the scatters on all minor-step active vertices.
+	  run_synchronous( &xadaptive_engine::execute_scatters );
+	  /**
+		 * Post conditions:
+		 *	 1) NONE
+		 */
+	  	if(rmi.procid() == 0 && print_this_round)
+		  logstream(LOG_EMPH) << "\t Running Aggregators" << std::endl;
+		// probe the aggregator
+		aggregator.tick_synchronous();
+  
+		++iteration_counter;
+  
+		if (snapshot_interval > 0 && iteration_counter % snapshot_interval == 0) {
+		  graph.save_binary(snapshot_path);
+		}
+	  }
+  
+	  rmi.full_barrier();
+	  // Stop the aggregator
+	  aggregator.stop();
+	  // return the final reason for termination
+	  return termination_reason;
+	} // end of start
+	
 
   template<typename VertexProgram> execution_status::status_enum
   xadaptive_engine<VertexProgram>::start() {
-    //xie insert
-	current_engine = X_SYNC;
-	
     if (vlocks.size() != graph.num_local_vertices())
       resize();
     completed_applys = 0;
@@ -2205,151 +2457,58 @@ namespace graphlab {
     force_abort = false;
     execution_status::status_enum termination_reason =
       execution_status::UNSET;
-    // if (perform_init_vtx_program) {
-    //   // Initialize all vertex programs
-    //   run_synchronous( &xadaptive_engine::initialize_vertex_programs );
-    // }
 
-	// xie insert: SYNC engine compution start
-    aggregator.start();
-    rmi.barrier();
+	if(current_engine == X_SYNC)
+		//begin with SYNC engine
+    	termination_reason = sstart();
+	else 
+		termination_reason = xstart();
 
-    if (snapshot_interval == 0) {
-      graph.save_binary(snapshot_path);
-    }
+	while(termination_reason==execution_status::MODE_SWITCH){
+		//try to switch engines
+		if(current_engine == X_SYNC){
+			//switch to ASYNC
+			scheduler_ptr->set_num_vertices(graph.num_local_vertices());
+		    xmessages.clear();
+		    vertexlocks.clear();
+		    program_running.clear();
+		    hasnext.clear();
+		    if (use_cache)
+		        has_cache.clear();
+		    if (!factorized_consistency) 
+		        cm_handles.clear();
+	
+			if (rmi.procid() == 0)
+				logstream(LOG_EMPH) << "Switch to ASYNC."<<std::endl;
+			termination_reason = xstart();
+			}
+		else{
+			//switch to SYNC
+			if (rmi.procid() == 0)
+				logstream(LOG_EMPH) << "Switch to SYNC."<<std::endl;
+			force_abort = false;
+		    iteration_counter = 0;
+		    completed_applys = 0;
+		    has_message.clear();
+		    has_gather_accum.clear();
+		    has_cache.clear();			//xie insert: haven't implement cache support
+		    active_superstep.clear();
+		    active_minorstep.clear();
+			each_iteration_signal = 0;
+			each_iteration_nmsg = 0;
+	
+			}
+		}
 
-    float last_print = -5;
-    if (rmi.procid() == 0) {
-      logstream(LOG_EMPH) << "Iteration counter will only output every 5 seconds."
-                        << std::endl;
-    }
-    // Program Main loop ====================================================
-    while(iteration_counter < max_iterations && !force_abort ) {
+	//handle termination
 
-      // Check first to see if we are out of time
-      if(timeout != 0 && timeout < elapsed_seconds()) {
-        termination_reason = execution_status::TIMEOUT;
-        break;
-      }
-
-      bool print_this_round = (elapsed_seconds() - last_print) >= 5;
-
-      if(rmi.procid() == 0 && print_this_round) {
-        logstream(LOG_EMPH)
-          << rmi.procid() << ": Starting iteration: " << iteration_counter
-          << std::endl;
-        last_print = elapsed_seconds();
-      }
-      // Reset Active vertices ----------------------------------------------
-      // Clear the active super-step and minor-step bits which will
-      // be set upon receiving messages
-      active_superstep.clear(); active_minorstep.clear();
-      has_gather_accum.clear();
-      rmi.barrier();
-
-      // Exchange Messages --------------------------------------------------
-      // Exchange any messages in the local message vectors
-      // if (rmi.procid() == 0) std::cout << "Exchange messages..." << std::endl;
-      run_synchronous( &xadaptive_engine::exchange_messages );
-      /**
-       * Post conditions:
-       *   1) only master vertices have messages
-       */
-
-      // Receive Messages ---------------------------------------------------
-      // Receive messages to master vertices and then synchronize
-      // vertex programs with mirrors if gather is required
-      //
-
-      // if (rmi.procid() == 0) std::cout << "Receive messages..." << std::endl;
-      num_active_vertices = 0;
-      run_synchronous( &xadaptive_engine::receive_messages );
-      if (sched_allv) {
-        active_minorstep.fill();
-      }
-      has_message.clear();
-      /**
-       * Post conditions:
-       *   1) there are no messages remaining
-       *   2) All masters that received messages have their
-       *      active_superstep bit set
-       *   3) All masters and mirrors that are to participate in the
-       *      next gather phases have their active_minorstep bit
-       *      set.
-       *   4) num_active_vertices is the number of vertices that
-       *      received messages.
-       */
-
-      // Check termination condition  ---------------------------------------
-      size_t total_active_vertices = num_active_vertices;
-      rmi.all_reduce(total_active_vertices);
-      if (rmi.procid() == 0 && print_this_round)
-        logstream(LOG_EMPH)
-          << "\tActive vertices: " << total_active_vertices << std::endl;
-      if(total_active_vertices == 0 ) {
-        termination_reason = execution_status::TASK_DEPLETION;
-        break;
-      }
-
-
-      // Execute gather operations-------------------------------------------
-      // Execute the gather operation for all vertices that are active
-      // in this minor-step (active-minorstep bit set).
-      // if (rmi.procid() == 0) std::cout << "Gathering..." << std::endl;
-      run_synchronous( &xadaptive_engine::execute_gathers );
-      // Clear the minor step bit since only super-step vertices
-      // (only master vertices are required to participate in the
-      // apply step)
-      active_minorstep.clear(); // rmi.barrier();
-      /**
-       * Post conditions:
-       *   1) gather_accum for all master vertices contains the
-       *      result of all the gathers (even if they are drawn from
-       *      cache)
-       *   2) No minor-step bits are set
-       */
-
-      // Execute Apply Operations -------------------------------------------
-      // Run the apply function on all active vertices
-      // if (rmi.procid() == 0) std::cout << "Applying..." << std::endl;
-    run_synchronous( &xadaptive_engine::execute_applys );
-      /**
-       * Post conditions:
-       *   1) any changes to the vertex data have been synchronized
-       *      with all mirrors.
-       *   2) all gather accumulators have been cleared
-       *   3) If a vertex program is participating in the scatter
-       *      phase its minor-step bit has been set to active (both
-       *      masters and mirrors) and the vertex program has been
-       *      synchronized with the mirrors.
-       */
-
-
-    // Execute Scatter Operations -----------------------------------------
-    // Execute each of the scatters on all minor-step active vertices.
-    run_synchronous( &xadaptive_engine::execute_scatters );
-    /**
-       * Post conditions:
-       *   1) NONE
-       */
-    if(rmi.procid() == 0 && print_this_round)
-        logstream(LOG_EMPH) << "\t Running Aggregators" << std::endl;
-      // probe the aggregator
-      aggregator.tick_synchronous();
-
-      ++iteration_counter;
-
-      if (snapshot_interval > 0 && iteration_counter % snapshot_interval == 0) {
-        graph.save_binary(snapshot_path);
-      }
-    }
-
-    if (rmi.procid() == 0) {
+	/*if (rmi.procid() == 0) {
       logstream(LOG_EMPH) << iteration_counter
                         << " iterations completed." << std::endl;
-    }
+    	}*/
+    	
     // Final barrier to ensure that all engines terminate at the same time
-    double total_compute_time = 0;
+   /* double total_compute_time = 0;
     for (size_t i = 0;i < per_thread_compute_time.size(); ++i) {
       total_compute_time += per_thread_compute_time[i];
     }
@@ -2370,11 +2529,9 @@ namespace graphlab {
     }
     rmi.full_barrier();
     // Stop the aggregator
-    aggregator.stop();
+    aggregator.stop();*/
     // return the final reason for termination
     return termination_reason;
-	
-    //return xstart();
     
   } // end of start
 
@@ -2452,14 +2609,15 @@ namespace graphlab {
         // if this is the master of lvid and we have a message
         if(graph.l_is_master(lvid)) {
           // The vertex becomes active for this superstep
-          active_superstep.set_bit(lvid);
+          active_superstep.set_bit(lvid); 
           ++nactive_inc;
           // Pass the message to the vertex program
           vertex_type vertex = vertex_type(graph.l_vertex(lvid));
           vertex_programs[lvid].init(context, vertex, messages[lvid]);
           // clear the message to save memory
-          messages[lvid] = message_type();
-          if (sched_allv) continue;
+          //messages[lvid] = message_type();	xie modify
+
+		  if (sched_allv) continue;
           // Determine if the gather should be run
           const vertex_program_type& const_vprog = vertex_programs[lvid];
           const vertex_type const_vertex = vertex;
@@ -2474,6 +2632,7 @@ namespace graphlab {
     }
 
     num_active_vertices += nactive_inc;
+	
     vprog_exchange.partial_flush(thread_id);
     // Flush the buffer and finish receiving any remaining vertex
     // programs.
@@ -2620,6 +2779,9 @@ namespace graphlab {
 
         // Only master vertices can be active in a super-step
         ASSERT_TRUE(graph.l_is_master(lvid));
+		//xie insert
+		messages[lvid] = message_type();
+		//xie insert end
         vertex_type vertex(graph.l_vertex(lvid));
         // Get the local accumulator.  Note that it is possible that
         // the gather_accum was not set during the gather.
@@ -2635,6 +2797,7 @@ namespace graphlab {
         // determine if a scatter operation is needed
         const vertex_program_type& const_vprog = vertex_programs[lvid];
         const vertex_type const_vertex = vertex;
+		
         if(const_vprog.scatter_edges(context, const_vertex) !=
            graphlab::NO_EDGES) {
           active_minorstep.set_bit(lvid);
@@ -2671,6 +2834,10 @@ namespace graphlab {
     context_type context(*this, graph);
     timer ti;
     fixed_dense_bitset<8 * sizeof(size_t)> local_bitset; // allocate a word size = 64 bits
+
+	//xie insert
+	size_t local_signal = 0;
+	
     while (1) {
       // increment by a word at a time
       lvid_type lvid_block_start =
@@ -2693,6 +2860,9 @@ namespace graphlab {
 				size_t edges_touched = 0;
         // Loop over in edges
         if(scatter_dir == IN_EDGES || scatter_dir == ALL_EDGES) {
+		  //xie insert
+		  local_signal += local_vertex.num_out_edges();
+			
           foreach(local_edge_type local_edge, local_vertex.in_edges()) {
             edge_type edge(local_edge);
             // elocks[local_edge.id()].lock();
@@ -2703,6 +2873,9 @@ namespace graphlab {
         } // end of if in_edges/all_edges
         // Loop over out edges
         if(scatter_dir == OUT_EDGES || scatter_dir == ALL_EDGES) {
+		  //xie insert
+		  local_signal += local_vertex.num_out_edges();
+		  
           foreach(local_edge_type local_edge, local_vertex.out_edges()) {
             edge_type edge(local_edge);
             // elocks[local_edge.id()].lock();
@@ -2717,6 +2890,9 @@ namespace graphlab {
       } // end of if active on this minor step
     } // end of loop over vertices to complete scatter operation
 
+	//xie insert
+	each_iteration_signal += local_signal;
+	
     per_thread_compute_time[thread_id] += ti.current_time();
   } // end of execute_scatters
 
@@ -2841,6 +3017,9 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   recv_messages(const bool try_to_recv) {
+	//xie insert
+	size_t local_msgs = 0;
+	
     procid_t procid(-1);
     typename message_exchange_type::buffer_type buffer;
     while(message_exchange.recv(procid, buffer, try_to_recv)) {
@@ -2848,7 +3027,11 @@ namespace graphlab {
         const lvid_type lvid = graph.local_vid(pair.first);
         ASSERT_TRUE(graph.l_is_master(lvid));
         vlocks[lvid].lock();
-        if( has_message.get(lvid) ) {
+
+		//xie insert
+		local_msgs++;
+	
+		if( has_message.get(lvid) ) {
           messages[lvid] += pair.second;
         } else {
           messages[lvid] = pair.second;
@@ -2857,6 +3040,8 @@ namespace graphlab {
         vlocks[lvid].unlock();
       }
     }
+
+	each_iteration_nmsg += local_msgs;
   } 
 
 

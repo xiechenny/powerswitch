@@ -691,7 +691,7 @@ namespace graphlab {
       if (finalized) return;
 #endif
       ASSERT_NE(ingress_ptr, NULL);
-      logstream(LOG_INFO) << "Distributed graph: enter finalize" << std::endl;
+      //logstream(LOG_INFO) << "Distributed graph: enter finalize" << std::endl;
       ingress_ptr->finalize();
       lock_manager.resize(num_local_vertices());
       rpc.barrier(); 

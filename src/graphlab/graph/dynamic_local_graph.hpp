@@ -336,8 +336,8 @@ namespace graphlab {
 #ifdef DEBUG_GRAPH
       logstream(LOG_DEBUG) << "End of finalize." << std::endl;
 #endif
-      logstream(LOG_INFO) << "Graph finalized in " << mytimer.current_time()
-                          << " secs" << std::endl;
+      //logstream(LOG_INFO) << "Graph finalized in " << mytimer.current_time()
+      //                    << " secs" << std::endl;
 
 #ifdef DEBUG_GRAPH
       _csr_storage.meminfo(std::cout);

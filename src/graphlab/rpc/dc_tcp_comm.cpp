@@ -240,7 +240,7 @@ namespace graphlab {
 
     void dc_tcp_comm::close() {
       if (is_closed) return;
-      logstream(LOG_INFO) << "Closing listening socket" << std::endl;
+      //logstream(LOG_INFO) << "Closing listening socket" << std::endl;
       // close the listening socket
       if (listensock > 0) {
         ::close(listensock);
@@ -260,7 +260,7 @@ namespace graphlab {
       event_base_free(outevbase);
 
 
-      logstream(LOG_INFO) << "Closing outgoing sockets" << std::endl;
+      //logstream(LOG_INFO) << "Closing outgoing sockets" << std::endl;
       // close all outgoing sockets
       for (size_t i = 0;i < sock.size(); ++i) {
         if (sock[i].outsock > 0) {
@@ -278,7 +278,7 @@ namespace graphlab {
       event_base_free(inevbase);
 
 
-      logstream(LOG_INFO) << "Closing incoming sockets" << std::endl;
+      //logstream(LOG_INFO) << "Closing incoming sockets" << std::endl;
       // close all incoming sockets
       for (size_t i = 0;i < sock.size(); ++i) {
         if (sock[i].insock > 0) {
@@ -581,13 +581,13 @@ namespace graphlab {
     }
 
     void dc_tcp_comm::receive_loop(struct event_base* ev) {
-      logstream(LOG_INFO) << "Receive loop Started" << std::endl;
+      //logstream(LOG_INFO) << "Receive loop Started" << std::endl;
       int ret = event_base_dispatch(ev);
       if (ret != 0) {
         logstream(LOG_FATAL) << "Receive loop Quit with " << ret << std::endl;
       }
       else {
-        logstream(LOG_INFO) << "Receive loop Stopped" << std::endl;
+        //logstream(LOG_INFO) << "Receive loop Stopped" << std::endl;
       }
     }
 
@@ -640,13 +640,13 @@ namespace graphlab {
 
 
     void dc_tcp_comm::send_loop(struct event_base* ev) {
-      logstream(LOG_INFO) << "Send loop Started" << std::endl;
+      //logstream(LOG_INFO) << "Send loop Started" << std::endl;
       int ret = event_base_dispatch(ev);
       if (ret != 0) {
         logstream(LOG_FATAL) << "Send loop Quit with " << ret << std::endl;
       }
       else {
-        logstream(LOG_INFO) << "Send loop Stopped" << std::endl;
+        //logstream(LOG_INFO) << "Send loop Stopped" << std::endl;
       }
     }
   }; // end of namespace dc_impl
