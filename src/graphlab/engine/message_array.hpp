@@ -39,7 +39,8 @@ namespace graphlab {
   class message_array {
   public:
     typedef ValueType value_type;
-
+	dense_bitset active_v;
+	 
   private:    
     struct message_box {
       value_type value;
@@ -72,6 +73,9 @@ namespace graphlab {
     simple_spinlock lock_array[65536];
     size_t joincounter[65536];
     size_t addcounter[65536];
+	//xie insert
+	size_t actcounter[65536];
+	
 
     /** Not assignable */
     void operator=(const message_array& other) { }
@@ -86,6 +90,7 @@ namespace graphlab {
       for (size_t i = 0; i < 65536; ++i) {
         joincounter[i] = 0; 
         addcounter[i] = 0;
+		actcounter[i] = 0;
       }
     }
 
@@ -94,6 +99,8 @@ namespace graphlab {
      */
     void resize(size_t num_vertices) {
       message_vector.resize(num_vertices);
+	  active_v.resize(num_vertices);
+	  active_v.clear();
     }
 
     /** Add a message to the set returning false if a message is already
@@ -104,9 +111,13 @@ namespace graphlab {
       double priority;
       size_t lockidx = get_lock_idx(idx);
       lock_array[lockidx].lock();
+	  //xie insert
+	  active_v.set_bit(idx);
+	  
       bool ret = message_vector[idx].add(val, priority);
       joincounter[lockidx] += !ret;
       addcounter[lockidx]++;
+	  actcounter[lockidx] += ret;
       lock_array[lockidx].unlock();
       if (message_priority) (*message_priority) = priority;
       return ret;
@@ -124,6 +135,10 @@ namespace graphlab {
       lock_array[lockidx].lock();
       if (!message_vector[idx].empty) {
         ret_val = message_vector[idx].value;
+		//xie insert
+		active_v.clear_bit(idx);
+		actcounter[lockidx] -= 1;
+		
         message_vector[idx].clear();
         has_val = true;
       }
@@ -155,7 +170,14 @@ namespace graphlab {
       size_t lockidx = get_lock_idx(idx);
       lock_array[lockidx].lock();
       message_vector[idx].clear(); 
-      lock_array[lockidx].unlock();
+
+	  //xie insert
+	  active_v.clear_bit(idx);
+	  joincounter[lockidx] = 0; 
+      addcounter[lockidx] = 0; 
+	  actcounter[lockidx] = 0;
+	
+	  lock_array[lockidx].unlock();
     }
 
     /// Returns true if the message at position idx is empty
@@ -192,9 +214,20 @@ namespace graphlab {
       return total_adds;
     }
 
+	//xie insert
+	size_t num_act() const { 
+      size_t total_act = 0;
+      for (size_t i = 0; i < 65536; ++i) {
+        total_act += actcounter[i];
+      }
+      return total_act;
+    }
+	
+
     /// not thread safe. Clears all contents
     void clear() {
       for (size_t i = 0; i < message_vector.size(); ++i) clear(i);
+	  active_v.clear();
     }
 
     

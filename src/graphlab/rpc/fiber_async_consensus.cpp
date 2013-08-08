@@ -92,7 +92,7 @@ namespace graphlab {
       outside of this critical section. 
     */
     --numactive;
-  
+ 
     /*
       Assertion: If numactive is ever 0 at this point, the algorithm is done.
       WLOG, let the current fiber which just decremented numactive be fiber 0
@@ -105,7 +105,9 @@ namespace graphlab {
       logstream(LOG_INFO) << rmi.procid() << ": Termination Possible" << std::endl;
       if (hastoken) pass_the_token();
     }
-    sleeping[cpuid] = true;
+    sleeping[cpuid] = true;	
+
+	
     while(1) {
       // here we are protected by the mutex again.
       
@@ -126,6 +128,7 @@ namespace graphlab {
     m.unlock();
     critical[cpuid] = false;
     trying_to_sleep.dec();
+	
     return done;
   }
   
@@ -194,7 +197,7 @@ namespace graphlab {
     hastoken = true;
     cur_token = tok;
     // if I am waiting on done, pass the token.
-    logstream(LOG_INFO) << rmi.procid() << ": Token Received" << std::endl;
+    //logstream(LOG_INFO) << rmi.procid() << ": Token Received" << std::endl;
     if (numactive == 0) {
       pass_the_token();
     }
@@ -266,11 +269,11 @@ namespace graphlab {
       last_calls_received = callsrecv;
       // send it along.
       hastoken = false;
-      logstream(LOG_INFO) << "Passing Token " << rmi.procid() << "-->" 
+      /*logstream(LOG_INFO) << "Passing Token " << rmi.procid() << "-->" 
                           << (rmi.procid() + 1) % rmi.numprocs() << ": "
                           << cur_token.total_calls_received << " " 
                           << cur_token.total_calls_sent << std::endl;
-
+*/
       rmi.control_call((procid_t)((rmi.procid() + 1) % rmi.numprocs()),
                        &fiber_async_consensus::receive_the_token,
                        cur_token);
