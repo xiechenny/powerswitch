@@ -567,8 +567,11 @@ namespace graphlab {
 	float  X_S_Actived_Rate;	//0.01/machine_num
 
 	// threshold in ASYNC 
-	float X_A_Threshold_low;// 0.01
-	float X_A_Threshold_hig;// 0.015
+	float  X_A_Threshold_low;// 0.01
+	float  X_A_Threshold_hig;// 0.015
+	float  X_A_Join_Rate;
+	size_t X_A_Delay_Counter;
+	size_t X_A_Delay;
 	
 	size_t d_join;
 	size_t d_add;
@@ -576,7 +579,15 @@ namespace graphlab {
 	size_t delay;
 	float avg_line[11];
 	float active[11];
-
+	size_t startcounter[30];
+	size_t endcounter[30];
+	size_t lastcounter;
+	size_t lastcounters;
+	timer globaltimer;
+	double lastime;
+	double startend;
+	size_t print;
+	double countoverhead;
 	
 	/**
 	 * \brief A bit (for master vertices) indicating if that vertex is active
@@ -589,6 +600,8 @@ namespace graphlab {
 	 * iteration.
 	 */
 	atomic<size_t> num_active_vertices;
+	//xie insert
+	atomic<size_t> num_active_mirrors;
 	
 	/**
 	 * \brief A bit indicating (for all vertices) whether to
@@ -767,12 +780,12 @@ namespace graphlab {
 		else if(opt == "set_s_sampled_iters"){
 			opts.get_engine_args().get_option("set_s_sampled_iters", X_S_Sampled_Iters);
 			if (rmi.procid() == 0)
-		        logstream(LOG_EMPH) << "Engine Option: set SYNC increase_rate threshold "<< X_S_Sampled_Iters << std::endl;
+		        logstream(LOG_EMPH) << "Engine Option: set SYNC sampled_iters threshold "<< X_S_Sampled_Iters << std::endl;
 			}
 		else if(opt == "set_s_actived_rate"){
 			opts.get_engine_args().get_option("set_s_actived_rate", X_S_Actived_Rate);
 			if (rmi.procid() == 0)
-		        logstream(LOG_EMPH) << "Engine Option: set SYNC increase_rate threshold "<< X_S_Actived_Rate << std::endl;
+		        logstream(LOG_EMPH) << "Engine Option: set SYNC actived_rate threshold "<< X_S_Actived_Rate << std::endl;
 			}
 		//========= ASYNC setting
 		else if(opt == "start_async") {
@@ -781,6 +794,18 @@ namespace graphlab {
 			if (rmi.procid() == 0)
 		          logstream(LOG_EMPH) << "Engine Option: start with ASYNC mode - "<<start_a<< std::endl;
 			current_engine = X_ASYNC;
+			}
+		else if(opt == "set_a_delay"){
+			//float threshold;
+			opts.get_engine_args().get_option("set_a_delay", X_A_Delay);
+			if (rmi.procid() == 0)
+		        logstream(LOG_EMPH) << "Engine Option: set a_delay threshold "<< X_A_Delay << std::endl;
+			}
+		else if(opt == "set_a_delay_counter"){
+			//float threshold;
+			opts.get_engine_args().get_option("set_a_delay_counter", X_A_Delay_Counter);
+			if (rmi.procid() == 0)
+		        logstream(LOG_EMPH) << "Engine Option: set a_delay_counter threshold "<< X_A_Delay_Counter << std::endl;
 			}
 		else if(opt == "set_a_threshold"){
 			//float threshold;
@@ -1246,6 +1271,7 @@ namespace graphlab {
       edge_dir_type gather_dir = vprog.gather_edges(context, vertex);
       conditional_gather_type accum;
 
+	  
       //check against the cache
       if( use_cache && has_cache.get(lvid) ) {
           accum.set(gather_cache[lvid]);
@@ -1329,6 +1355,19 @@ namespace graphlab {
       xperform_scatter_local(lvid, vprog);
     }
 
+	//xie insert
+	void xperform_vdata_sync(vertex_id_type vid,
+						const vertex_data_type& newdata) {
+		  lvid_type lvid = graph.local_vid(vid);
+		  vertexlocks[lvid].lock();
+		  graph.l_vertex(lvid).data() = newdata;
+		  vertexlocks[lvid].unlock();
+		   // release locks
+	      if (!factorized_consistency) {
+	        cmlocks->philosopher_stops_eating_per_replica(lvid);
+	      }
+	}
+
 
     // make sure I am the only person running.
     // if returns false, the message has been dropped into the message array.
@@ -1374,7 +1413,7 @@ namespace graphlab {
      * should be true. Otherwise it should be false.
      */
     void xeval_sched_task(const lvid_type lvid,
-                         const message_type& msg) {
+                         const message_type& msg, size_t threadid) {
       const typename graph_type::vertex_record& rec = graph.l_get_vertex_record(lvid);
       vertex_id_type vid = rec.gvid;
       // if this is another machine's forward it
@@ -1386,6 +1425,8 @@ namespace graphlab {
       
       if (!xget_exclusive_access_to_vertex(lvid, msg)) return;
 
+	  startcounter[fiber_control::get_worker_id()]++;
+	  
       /**************************************************************************/
       /*                             Acquire Locks                              */
       /**************************************************************************/
@@ -1402,7 +1443,6 @@ namespace graphlab {
         }
         cm_handles[lvid]->lock.unlock();
       }
-
       /**************************************************************************/
       /*                             Begin Program                              */
       /**************************************************************************/
@@ -1419,25 +1459,33 @@ namespace graphlab {
       /**************************************************************************/
       /*                              Gather Phase                              */
       /**************************************************************************/
+	  
       conditional_gather_type gather_result;
       std::vector<request_future<conditional_gather_type> > gather_futures;
-      foreach(procid_t mirror, local_vertex.mirrors()) {
-        gather_futures.push_back(
-            object_fiber_remote_request(rmi, 
-                                        mirror, 
-                                        &xadaptive_engine::xperform_gather, 
-                                        vid,
-                                        vprog));
-      }
-      gather_result += xperform_gather(vid, vprog);
 
-      for(size_t i = 0;i < gather_futures.size(); ++i) {
-        gather_result += gather_futures[i]();
-      }
+	  if(vprog.gather_edges(context, vertex)!=graphlab::NO_EDGES)  //xie insert change:  judge if no_edges previously
+	  {    foreach(procid_t mirror, local_vertex.mirrors()) {
+	        gather_futures.push_back(
+	            object_fiber_remote_request(rmi, 
+	                                        mirror, 
+	                                        &xadaptive_engine::xperform_gather, 
+	                                        vid,
+	                                        vprog));
+	      }
+	      gather_result += xperform_gather(vid, vprog);
+				  
+	      for(size_t i = 0;i < gather_futures.size(); ++i) {
+	        gather_result += gather_futures[i]();
+	      }
+	  }// end skip no_edges
 
      /**************************************************************************/
      /*                              apply phase                               */
-     /**************************************************************************/
+     /**************************************************************************/ 
+
+	 //xie insert tmp :
+	 //const vertex_data_type predata = local_vertex.data();
+	 
      vertexlocks[lvid].lock();
      vprog.apply(context, vertex, gather_result.value);      
      vertexlocks[lvid].unlock();
@@ -1457,20 +1505,41 @@ namespace graphlab {
                        local_vertex.data());
      		}*/
 
-     std::vector<request_future<void> > scatter_futures;
-     foreach(procid_t mirror, local_vertex.mirrors()) {
-       scatter_futures.push_back(
-           object_fiber_remote_request(rmi, 
-                                       mirror, 
-                                       &xadaptive_engine::xperform_scatter, 
-                                       vid,
-                                       vprog,
-                                       local_vertex.data()));
-     }
-     xperform_scatter_local(lvid, vprog);
-     for(size_t i = 0;i < scatter_futures.size(); ++i) 
-       scatter_futures[i]();
+	 
+	 /*if(vprog.scatter_edges(context, vertex)==graphlab::NO_EDGES){		//xie insert skip no scatter
+	  std::vector<request_future<void> > scatter_futures;
+	  foreach(procid_t mirror, local_vertex.mirrors()) {
+	       scatter_futures.push_back(
+	           object_fiber_remote_request(rmi, 
+	                                       mirror, 
+	                                       &xadaptive_engine::xperform_vdata_sync, 
+	                                       vid,
+	                                       local_vertex.data()));
+	     }
 
+	   for(size_t i = 0;i < scatter_futures.size(); ++i) 
+	       scatter_futures[i]();
+	 }
+	 // xie insert end 
+	 else */			  
+
+	 {
+	     std::vector<request_future<void> > scatter_futures;
+	     foreach(procid_t mirror, local_vertex.mirrors()) {
+	       scatter_futures.push_back(
+	           object_fiber_remote_request(rmi, 
+	                                       mirror, 
+	                                       &xadaptive_engine::xperform_scatter, 
+	                                       vid,
+	                                       vprog,
+	                                       local_vertex.data()));
+	     }
+	     xperform_scatter_local(lvid, vprog);
+	     for(size_t i = 0;i < scatter_futures.size(); ++i) 
+	       scatter_futures[i]();
+	 }
+	 
+	 
       /************************************************************************/
       /*                           Release Locks                              */
       /************************************************************************/
@@ -1482,6 +1551,46 @@ namespace graphlab {
       }
       xrelease_exclusive_access_to_vertex(lvid);
       programs_executed.inc(); 
+
+	  //if(fiber_control::get_worker_id()==0) 
+	  {
+			//if((rmi.procid()==0)&&(endcounter[0]%500==0)/*||(fiber_control::get_worker_id()==21)*/)
+			/*{
+					size_t scounter = 0;
+					size_t ecounter = 0;
+				  for(size_t i=0;i<30; i++){
+					  scounter+=startcounter[i];
+					  ecounter+=endcounter[i];
+					  }
+				  double now = globaltimer.current_time_millis();
+				  logstream(LOG_INFO)<<rmi.procid()<<"-"<<fiber_control::get_worker_id()
+				  	  <<" s&e "<<scounter<<" "<<ecounter
+					  <<" differ "<<(scounter-ecounter)
+					  <<" s&e_a "<<(scounter-lastcounters)/(now-lastime)
+				  	  <<" "<<(ecounter-lastcounter)/(now-lastime)
+					  <<" At "<<now<<std::endl; 
+
+				 lastcounter = ecounter;
+				 lastcounters = scounter;
+				 lastime = globaltimer.current_time_millis();
+				}
+*/
+			/*if((rmi.procid()==0)&&(a_numcounter%50==0))
+			{
+				logstream(LOG_INFO)<<rmi.procid()<<"-"<<fiber_control::get_worker_id()
+					<<": G "<<a_gcounter/a_numcounter
+					<<",A "<<a_acounter/a_numcounter
+					<<",S "<<a_scounter/a_numcounter
+					<<",Other "<<a_othercounter/a_numcounter<<std::endl;
+				
+				a_gcounter = 0;
+				a_acounter = 0;
+				a_scounter = 0;
+				a_othercounter = 0;
+				a_numcounter = 0;
+			}*/
+	}
+	endcounter[fiber_control::get_worker_id()]++;
     }
 
 
@@ -1497,11 +1606,34 @@ namespace graphlab {
       message_type msg;
       float last_aggregator_check = timer::approx_time_seconds();
       timer ti; ti.start();
+
+	
+	  if((rmi.procid()==0)&&(threadid%3000==0)){
+		  iteration_counter = 0;
+		  for(int i=0; i<11;i++){
+		  	avg_line[i] = 0;
+			active[i] = 0;
+		  	}
+	  	}
+	  float true_actived_rate = X_S_Actived_Rate/(log(rmi.numprocs())/log(2)+1);
+	  float fdelay = 0;
+	  size_t sleep_counter = 0;
+
+	  double xstart = globaltimer.current_time_millis();
+	  double thro = 0;
+	 
+	  if((fiber_control::get_worker_id()==0)){
+	  	print = 0;
+	  }
+	  
       while(1) {
 	  	if(stop_async)	break;
-		/*if(delay){
-			
-			}*/
+
+		/*if(delay >= X_A_Delay_Counter){
+			if(threadid%1000==0) sleep_counter++;
+			usleep(X_A_Delay);
+			delay = 0;
+		}*/
 		
         if (timer::approx_time_seconds() != last_aggregator_check && !endgame_mode) {
           last_aggregator_check = timer::approx_time_seconds();
@@ -1533,69 +1665,117 @@ namespace graphlab {
 
         has_sched_msg = stat != sched_status::EMPTY;
         if (stat != sched_status::EMPTY) {
-          xeval_sched_task(sched_lvid, msg);
+          xeval_sched_task(sched_lvid, msg, threadid);
           if (endgame_mode) rmi.dc().flush();
         }
         else if (!xtry_to_quit(threadid, has_sched_msg, sched_lvid, msg)) {
           /*
-           * We failed to obtain a task, try to quit
-           */
-        if (has_sched_msg) {
-            xeval_sched_task(sched_lvid, msg);
-          }
-        } else { 
-          break; 
+	           * We failed to obtain a task, try to quit
+	           */
+	        if (has_sched_msg) { 
+	            xeval_sched_task(sched_lvid, msg,threadid);
+	          }
+	        } else { 
+          	break; 
         }
 
 		//xie insert
 		bool ifdelay = false;
-		if((rmi.procid()==0)&&(threadid%3000==0)){
+		if(/*(rmi.procid()==0)&&*/(threadid%3001==0)){
 			//if(timer::approx_time_seconds()-engine_start_time>LEAST_EXECUTE_TIME){
-				//judge if switch
-				size_t local_join = xmessages.num_joins();
-				size_t local_task = xmessages.num_adds();
-				//size_t finished_t = programs_executed.value;
+			//judge if switch
+			size_t local_join = xmessages.num_joins();
+			size_t local_task = xmessages.num_adds();
+			//size_t finished_t = programs_executed.value;
 
-				size_t actn = xmessages.num_act();
-				//size_t finished = finished_t-program_executed_pre;
-				//float factor = ((float)exclusive_executed.value-exclusive_executed_pre)/finished;
+			size_t actn = xmessages.num_act();
+			iteration_counter++;
+			/*	
+				float avg_inc_rate = 1;
+				float fac = ((float)actn)/graph.num_vertices();
+				size_t now = iteration_counter%11; 
+				active[now] = fac;
+				avg_line[now] = avg_line[(iteration_counter-1)%11]+(fac-active[(iteration_counter-X_S_Sampled_Iters)%11])/X_S_Sampled_Iters;
+				avg_inc_rate = avg_line[now]-avg_line[(iteration_counter-5)%11];
 				
+				logstream(LOG_EMPH)<< threadid << ": iterations "<< iteration_counter<<" ,fac "<<fac
+									<<" ,tol_active "<<actn
+									<<" ,avg_inc_rate "<<avg_inc_rate
+									<<std::endl;
+				
+				*/
 				//logstream(LOG_INFO)<<threadid<<": actn "<<actn<<" , numv "<<graph.num_vertices()<<" , exclusive fac "<<factor<<std::endl;
 				//exclusive_executed_pre = exclusive_executed.value;
 				//program_executed_pre = programs_executed.value;
 					
-				if//( actn*rmi.numprocs()>(X_THRESHOLD_hig*graph.num_vertices()) ){
-				(programs_executed.value>X_A_Threshold_low*10000){
-					logstream(LOG_INFO)<<threadid<<": actn "<<actn<<" , numv "<<graph.num_vertices()<<std::endl;
-					logstream(LOG_INFO)<<threadid<<": Try to set stop_async... At "<<(timer::approx_time_millis()-x_start_time_m)<<std::endl;
-					
+				if(//( actn*rmi.numprocs()>(X_THRESHOLD_hig*graph.num_vertices()) ){
+				(programs_executed.value>X_A_Threshold_low*10000)
+				/*||(programs_executed.value>6000)*/){
+					//logstream(LOG_INFO)<<threadid<<": actn "<<actn<<" , numv "<<graph.num_vertices()<<std::endl;
+					//thro = (programs_executed.value/(globaltimer.current_time_millis()-xstart));
+					first_time_start = false;
 					//set prepare to stop
 					stop_async = true;
+					countoverhead = globaltimer.current_time_millis();
 					// put everyone in endgame
-			        for (procid_t i = 0;i < rmi.dc().numprocs(); ++i) {
+			        for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 			          	rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
-			        	} 
-					}
-				//}
+	
+				}
 
-			/*	float fdelay= ((float)(local_join-d_join))/(local_task-d_add);
-				//logstream(LOG_INFO)<<threadid<<": task join "<<(local_join-d_join)<<" , task add "<<(local_task-d_add)<<" , task competed "<<(programs_executed.value-d_complete)<<std::endl;
-				d_join = local_join;
-				d_add = local_task;
-				d_complete = programs_executed.value;
 
-				if(fdelay<0.48){
-					logstream(LOG_INFO)<<threadid<<": delay task since join rate "<<fdelay<<std::endl;
-					delay +=1;
-				}*/
+			//=========== sampling delay ================
+			/*float t_fdelay= ((float)(local_join-d_join))/(local_task-d_add);
+			//logstream(LOG_INFO)<<threadid<<": task join "<<(local_join-d_join)<<" , task add "<<(local_task-d_add)<<" , task competed "<<(programs_executed.value-d_complete)<<std::endl;
+			d_join = local_join;
+			d_add = local_task;
+			d_complete = programs_executed.value;
+			fdelay = (fdelay*X_S_Sampled_Iters+t_fdelay)/(X_S_Sampled_Iters+1);
+			if(fdelay<X_A_Join_Rate){
+				delay++;
 			}
-
+			else delay--;*/
+			//=======================================
+			}
+		
+		if((print<3)&&(fiber_control::get_worker_id()==0) )
+	  	{
+	  		double nowtime = globaltimer.current_time_millis();
+			if(nowtime-lastime >200){
+				size_t scounter = 0;
+				size_t ecounter = 0;
+				for(size_t i=0;i<30; i++){
+					scounter+=startcounter[i];
+					ecounter+=endcounter[i];
+				}
+				logstream(LOG_INFO)<<rmi.procid()<<":"
+				  	<<" s&e "<<scounter<<" "<<ecounter
+					//<<" differ "<<(scounter-ecounter)
+					<<" s&e_a "<<(scounter-lastcounters)/(nowtime-lastime)
+				  	<<" "<<(ecounter-lastcounter)/(nowtime-lastime)
+				  	<<" print "<<print
+					<<" At "<<nowtime<<std::endl; 
+				lastime = nowtime;
+				lastcounter = ecounter;
+				lastcounters = scounter;
+				print++;
+			}
+		}
+	  
 		if(stop_async)	break;
 
         if (fiber_control::worker_has_fibers_on_queue()) fiber_control::yield();
       }
 
-	  //logstream(LOG_INFO)<<rmi.procid()<<"-"<<threadid<<": thread end..."<<std::endl;
+
+	  if(threadid%3001==0)
+	  	logstream(LOG_INFO)<<rmi.procid()<<"-"<<threadid<<": Try to set stop_async... At "<<(timer::approx_time_millis()-x_start_time_m)
+							  <<" programs_executed.value "<<programs_executed.value
+							  <<" throughput "<<thro
+							  <<std::endl;
+	  
+
+	  //if(threadid==0) logstream(LOG_INFO)<<rmi.procid()<<"-"<<threadid<<": sleep_counter( "<<sleep_counter<<" )*delay_time( "<<X_A_Delay<<std::endl;
     } // end of thread start
 
 
@@ -1630,11 +1810,11 @@ namespace graphlab {
 	  d_add = 0;
 	  d_complete = 0;
 	  delay = 0;
+	  graphlab::timer timer; timer.start();
+	  //globaltimer.start();
 	  
 	  //signal active vertex:  first signal then clear   the "next_mode_active_vertex" is just a pointer, point to asy_start_active_v or active_superstep
-	  if(first_time_start)	
-		first_time_start = false;
-	  else 
+	  if(!first_time_start)	
 		x_inner_signal_vset();
 	  asy_start_active_v.clear();
 
@@ -1661,7 +1841,7 @@ namespace graphlab {
 
       engine_start_time = timer::approx_time_seconds();
       force_stop = false;
-      endgame_mode = false;//false;		xie modify
+      endgame_mode = false;		
       programs_executed = 0;
 	  exclusive_executed = 0;		//xie insert
 	  exclusive_executed_pre = 0;	//xie insert
@@ -1669,7 +1849,7 @@ namespace graphlab {
 
       termination_reason = execution_status::RUNNING;
       if (rmi.procid() == 0) {
-        logstream(LOG_INFO) << "Total Allocated Bytes: " << allocatedmem << " , Start at "<<(timer::approx_time_millis()-x_start_time_m)<<std::endl;
+        logstream(LOG_INFO) << "Total Allocated Bytes: " << allocatedmem << std::endl;
       }
       fiber_group::affinity_type affinity;
       affinity.clear();
@@ -1679,19 +1859,52 @@ namespace graphlab {
       thrgroup.set_affinity(affinity);
       thrgroup.set_stacksize(stacksize);
 
-	//xie insert:  could change between ASYCN and local_SYNC
+	  //xie insert:  samppling
+	  //startcounter = 0;
+	  //endcounter = 0;
+	  lastcounter = 0;
+	  lastcounters = 0;
+	  lastime = globaltimer.current_time_millis();
+	  double xstartime = lastime;
+	  
+	  for(size_t i = 0; i<30; ++i){
+	  	startcounter[i] = 0;
+		endcounter[i] = 0;
+	  	}
+
+	  //xie insert record overhead
+	  if(!first_time_start)
+	  	logstream(LOG_INFO)<<rmi.procid()<<"-"<<fiber_control::get_worker_id()
+	  		<<"  SYNC-ASYNC switch overhead "<<globaltimer.current_time_millis()-countoverhead<<std::endl;
+	  
       for (size_t i = 0; i < nfibers ; ++i) {
         thrgroup.launch(boost::bind(&engine_type::xthread_start, this, i));
       }
       thrgroup.join();
 	  aggregator.stop();
 
+	  
+		size_t scounter = 0;
+		size_t ecounter = 0;
+	  for(size_t i=0;i<30; i++){
+		  scounter+=startcounter[i];
+		  ecounter+=endcounter[i];
+		  }
+	  double now = globaltimer.current_time_millis();
+	  logstream(LOG_INFO)<<rmi.procid()<<"-"<<fiber_control::get_worker_id()
+		  <<" s&e "<<scounter<<" "<<ecounter
+		  <<" exclusive "<<exclusive_executed.value
+		  <<" s&e_a "<<(scounter)/(now-xstartime)
+		  <<" lastcompute "<<startend
+		  <<" At "<<now<<std::endl; 
+		  
+
 	  //if need to activate next mode
 	  if(stop_async){
 	  	rmi.full_barrier();
 		
 		//if(rmi.procid()==0)
-	  	logstream(LOG_INFO)<< "from async to sync now: "<<stop_async <<" At "<<(timer::approx_time_millis()-x_start_time_m)<<std::endl;
+	  	logstream(LOG_INFO)<< "from async to sync now: "<<stop_async <<std::endl;
 		
 		//messages should be sent into next mode then clear
 		next_mode_active_vertex = xmessages.active_v;
@@ -1717,7 +1930,7 @@ namespace graphlab {
 
       size_t numadds = xmessages.num_adds();
       rmi.all_reduce(numadds);
-      rmi.cout() << "Schedule Adds: " << numadds <<" , End at "<<(timer::approx_time_millis()-x_start_time_m)<< std::endl;
+      rmi.cout() << "Schedule Adds: " << numadds <<" , End at "<<globaltimer.current_time_millis()<< std::endl;
 
 
       if(!stop_async)	//xie insert judgement
@@ -2126,12 +2339,15 @@ namespace graphlab {
     factorized_consistency = true;
     timed_termination = (size_t)(-1);
     termination_reason = execution_status::UNSET;
-	X_A_Threshold_low = 0.01;
-	X_A_Threshold_hig = 0.015;
+	X_A_Threshold_low = 500000000;//0.01;
+	X_A_Threshold_hig = 500000000;//0.015;
 	X_S_Min_Iters = 5;
-	X_S_Increase_Rate = -(0.001);
+	X_S_Increase_Rate = -(0.00001);
 	X_S_Sampled_Iters = 10;
-	X_S_Actived_Rate = 0.01;
+	X_S_Actived_Rate = 250000;//0.05;
+	X_A_Join_Rate = 0.4;
+	X_A_Delay_Counter = 20;
+	X_A_Delay = 200;
 
 	//xie insert : set sync & async opts
 	xset_options(opts);
@@ -2461,9 +2677,9 @@ namespace graphlab {
 		active[i] = 0;
 	  	}
 
-	  float true_actived_rate = X_S_Actived_Rate/(rmi.numprocs()*0.8);		// factor 0.8 is temporary  controlling the decrease rate
 	  float start_this_turn;		// used for set least execution time
-	  	
+	  size_t total_act = 0;
+	  
 	  // xie insert: SYNC engine compution start
 	  aggregator.start();
 	  rmi.barrier();
@@ -2474,19 +2690,24 @@ namespace graphlab {
 	  }*/
   
 	  float last_print = -5;
-	  //if (rmi.procid() == 0) {
-		logstream(LOG_EMPH) << rmi.procid()<<": Iteration counter will only output every 5 seconds. At "
-						  << (timer::approx_time_millis()-x_start_time_m) << std::endl;
-	  //}
+	  if (rmi.procid() == 0) {
+		logstream(LOG_EMPH) << rmi.procid()<<": Iteration counter will only output every 5 seconds. Switch overhead "
+						  << (globaltimer.current_time_millis() -countoverhead) << std::endl;
+	  }
+
+
+	  double timelast = 0;
+	  size_t lastactive = 0;
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
-  
+		//double time_estart = globaltimer.current_time_millis();
+		
 		// Check first to see if we are out of time
 		if(timeout != 0 && timeout < elapsed_seconds()) {
 		  termination_reason = execution_status::TIMEOUT;
 		  break;
 		}
-  
+  		
 		bool print_this_round = (elapsed_seconds() - last_print) >= 5;
   
 		if(rmi.procid() == 0 && print_this_round) {
@@ -2518,6 +2739,10 @@ namespace graphlab {
   
 		// if (rmi.procid() == 0) std::cout << "Receive messages..." << std::endl;
 		num_active_vertices = 0;
+		//xie insert
+		num_active_mirrors = 0;
+		//double time_rstart = globaltimer.current_time_millis();
+		
 		run_synchronous( &xadaptive_engine::receive_messages );
 		if (sched_allv) {
 		  active_minorstep.fill();
@@ -2537,34 +2762,48 @@ namespace graphlab {
   
 		// Check termination condition	---------------------------------------
 		size_t total_active_vertices = num_active_vertices;
-		//size_t local_active_vertices = num_active_vertices;	//xie try to see whether balance on every machine.
 		
 		rmi.all_reduce(total_active_vertices);
-		if (rmi.procid() == 0 && print_this_round)
-		  logstream(LOG_EMPH)
-			<< "\tActive vertices: " << total_active_vertices << " At "<<(timer::approx_time_millis()-x_start_time_m) <<std::endl;
+
 		if(total_active_vertices == 0 ) {
 		  termination_reason = execution_status::TASK_DEPLETION;
 		  break;
 		}
 
+		double time_rend = globaltimer.current_time_millis();
   		//xie insert
   		//================================================================
 		//xie insert: when iteration_counter==max_iterations, get the active vertex set and break;
-		size_t total_signal_number = each_iteration_signal;
-		size_t total_msg_number = each_iteration_nmsg;
+		//size_t total_signal_number = each_iteration_signal;
+		//size_t total_msg_number = each_iteration_nmsg;
+		//size_t total_active_mirrors = num_active_mirrors;
 		//rmi.all_reduce(total_signal_number);
 		//rmi.all_reduce(total_msg_number);
+		//rmi.all_reduce(total_active_mirrors);
+		//each_iteration_signal = 0;
+		//each_iteration_nmsg = 0;
+		
 	
-		/*logstream(LOG_EMPH)<< rmi.procid() << ":iter " << iteration_counter
+		/*if (rmi.procid() == 0 )
+		{
+			double this_iter_time = globaltimer.current_time_millis()-timelast;
+			logstream(LOG_EMPH)<< rmi.procid() << ":iter " << iteration_counter
 			//<<" , max_iterations "<<max_iterations
-			<<" , total_iter_msg "<<total_msg_number
+			<<" ,total_iter_msg "<<total_msg_number
 			//<<" , each_iter_sig "<<each_iteration_signal
-			<<" , total_sig_num "<<total_signal_number
+			//<<" , total_sig_num "<<total_signal_number
 			//<<" , local_active_vertex "<<local_active_vertices
-			<<" , total_act_ver "<<total_active_vertices
-			<<std::endl;*/
+			<<" ,total_act_ver "<<total_active_vertices
+			<<" ,total_act_mir "<<total_active_mirrors
+			<<" ,thro_last "<<lastactive/3.0/this_iter_time
+			<<" ,At "<<this_iter_time //<<" ,e: "<<time_rstart-time_estart<<" ,r: "<<time_rend-time_estart
+			<<std::endl;
+			lastactive = total_active_vertices;
+			total_act+=total_active_vertices;
+		}*/
+	    timelast = globaltimer.current_time_millis();
 
+		
 		// clear counters
 		//each_iteration_signal = 0;
 		//each_iteration_nmsg = 0;
@@ -2572,26 +2811,29 @@ namespace graphlab {
 		float fac = 1;
 		float avg_inc_rate = 1;
 		if(!has_max_iterations){
-			fac = ((float)total_active_vertices)/graph.num_vertices();
+			//fac = ((float)total_active_vertices)/graph.num_vertices();
 			size_t now = iteration_counter%11; 
-			active[now] = fac;
-			avg_line[now] = avg_line[(iteration_counter-1)%11]+(fac-active[(iteration_counter-X_S_Sampled_Iters)%11])/X_S_Sampled_Iters;
+			active[now] = total_active_vertices;//fac;
+			avg_line[now] = avg_line[(iteration_counter-1)%11]+(total_active_vertices-active[(iteration_counter-X_S_Sampled_Iters)%11])/X_S_Sampled_Iters;
 			avg_inc_rate = avg_line[now]-avg_line[(iteration_counter-5)%11];
-
-			/*if(rmi.procid()==0)
-				logstream(LOG_EMPH)<< rmi.procid() << ": iterations "<< iteration_counter<<" ,fac "<<fac
-					<<" ,tol_active "<<total_active_vertices
-					<<" ,avg_inc_rate "<<avg_inc_rate
-					<<std::endl;*/
 		}
 
-		if((iteration_counter==max_iterations)||
-			((fac<true_actived_rate)&&(avg_inc_rate<X_S_Increase_Rate)&&(iteration_counter>X_S_Min_Iters))){
+		/*if((iteration_counter==max_iterations)||
+			((total_active_vertices/*fac*//*<true_actived_rate)&&(avg_inc_rate<true_increase_rate)&&(iteration_counter>X_S_Min_Iters))){
+*/
+		if(iteration_counter==X_S_Actived_Rate){
 			if (rmi.procid() == 0)
-				logstream(LOG_EMPH)<< rmi.procid() << ": iterations "<< iteration_counter<<" ,fac "<<fac
-					<<" ,tol_active "<<total_active_vertices<<" X_S_Increase_Rate "<<X_S_Increase_Rate
-					<<" ,avg_inc "<<avg_inc_rate<< " true_actived_rate "<<true_actived_rate
-					<<" ,At "<<(timer::approx_time_millis()-x_start_time_m)<<std::endl;
+				logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
+					//<<" ,tol_active "<<total_active_vertices<<" X_S_Increase_Rate "<<X_S_Increase_Rate
+					//<<" , total_iter_msg "<<total_msg_number
+					//<<" , total_sig_num "<<total_signal_number
+					//<<" , total_act_ver "<<total_active_vertices
+					//<<" , total_act_mir "<<total_active_mirrors
+					<<" ,avg_inc "<<avg_inc_rate
+					//<< " true_actived_rate "<<true_actived_rate
+					<<rmi.numprocs()<<std::endl;
+
+			countoverhead = globaltimer.current_time_millis();
 			
 			// if iteration_counter==0, next_mode_active_vertex has been set to initial signal set.
 			if(iteration_counter==0)
@@ -2663,6 +2905,12 @@ namespace graphlab {
 	  rmi.full_barrier();
 	  // Stop the aggregator
 	  aggregator.stop();
+
+	  if (rmi.procid() == 0) {
+      logstream(LOG_EMPH) << iteration_counter
+                        << " iterations completed. tol act "<<total_act<< std::endl;
+	  	}
+                        
 	  // return the final reason for termination
 	  return termination_reason;
 	} // end of start
@@ -2678,19 +2926,20 @@ namespace graphlab {
     // Initialization code ==================================================
     // Reset event log counters?
     // Start the timer
-    graphlab::timer timer; timer.start();
     start_time = timer::approx_time_seconds();
     iteration_counter = 0;
     force_abort = false;
     execution_status::status_enum termination_reason =
       execution_status::UNSET;
 
-	x_start_time_m = timer::approx_time_millis();	// start time
+	globaltimer.start();
+	x_start_time_m = globaltimer.current_time_millis();	// start time
 	if(current_engine == X_SYNC)
 		//begin with SYNC engine
     	termination_reason = sstart();
 	else 
 		termination_reason = xstart();
+
 
 	while(termination_reason==execution_status::MODE_SWITCH){
 		//try to switch engines
@@ -2706,13 +2955,13 @@ namespace graphlab {
 		        cm_handles.clear();
 	
 			if (rmi.procid() == 0)
-				logstream(LOG_EMPH) << "Switch to ASYNC. At "<<(timer::approx_time_millis()-x_start_time_m)<<std::endl;
+				logstream(LOG_EMPH) << "Switch to ASYNC. At "<<(globaltimer.current_time_millis()-x_start_time_m)<<std::endl;
 			termination_reason = xstart();
 			}
 		else{
 			//switch to SYNC
 			if (rmi.procid() == 0)
-				logstream(LOG_EMPH) << "Switch to SYNC. At "<<(timer::approx_time_millis()-x_start_time_m)<<std::endl;
+				logstream(LOG_EMPH) << "Switch to SYNC. At "<<(globaltimer.current_time_millis()-x_start_time_m)<<std::endl;
 			force_abort = false;
 		    iteration_counter = 0;
 		    completed_applys = 0;
@@ -2816,6 +3065,9 @@ namespace graphlab {
     const size_t TRY_RECV_MOD = 100;
     size_t vcount = 0;
     size_t nactive_inc = 0;
+	//xie insert
+	size_t nactive_mirrors = 0;
+	
     fixed_dense_bitset<8 * sizeof(size_t)> local_bitset; // a word-size = 64 bit
 
     while (1) {
@@ -2844,7 +3096,9 @@ namespace graphlab {
           vertex_programs[lvid].init(context, vertex, messages[lvid]);
           // clear the message to save memory
           //messages[lvid] = message_type();	xie modify
-
+		  //xie insert
+		  nactive_mirrors += graph.l_vertex(lvid).num_mirrors();
+	
 		  if (sched_allv) continue;
           // Determine if the gather should be run
           const vertex_program_type& const_vprog = vertex_programs[lvid];
@@ -2860,6 +3114,8 @@ namespace graphlab {
     }
 
     num_active_vertices += nactive_inc;
+	//xie insert
+	num_active_mirrors += nactive_mirrors;
 	
     vprog_exchange.partial_flush(thread_id);
     // Flush the buffer and finish receiving any remaining vertex

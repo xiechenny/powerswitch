@@ -199,8 +199,16 @@ int main(int argc, char** argv) {
   // Set initial values for members ------------------------------------------->
   size_t ncolors = 5;
   double error_rate = 0.5;
-  uint16_t nrows = 200;
-  uint16_t ncols = 200;
+
+  uint16_t msize1 = 200;
+  uint16_t msize2 = 200;
+  if(argc>1) msize1 = atoi(argv[1]);
+  if(argc>2) msize2 = atoi(argv[2]);
+  else msize2-msize1;
+
+  
+  uint16_t nrows = msize1;
+  uint16_t ncols = msize2;
  
   std::string vdata_fn = "synth_vdata.tsv";
   std::string edata_fn = "synth_edata.tsv";

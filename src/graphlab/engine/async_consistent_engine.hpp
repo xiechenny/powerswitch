@@ -1051,6 +1051,9 @@ namespace graphlab {
       /**************************************************************************/
       conditional_gather_type gather_result;
       std::vector<request_future<conditional_gather_type> > gather_futures;
+
+	  if(vprog.gather_edges(context, vertex)!=graphlab::NO_EDGES)  //xie insert change:  judge if no_edges previously
+      {
       foreach(procid_t mirror, local_vertex.mirrors()) {
         gather_futures.push_back(
             object_fiber_remote_request(rmi, 
@@ -1064,7 +1067,8 @@ namespace graphlab {
       for(size_t i = 0;i < gather_futures.size(); ++i) {
         gather_result += gather_futures[i]();
       }
-
+      }
+	
      /**************************************************************************/
      /*                              apply phase                               */
      /**************************************************************************/

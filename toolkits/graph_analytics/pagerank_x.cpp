@@ -138,7 +138,11 @@ struct pagerank_writer {
     strm << v.id() << "\t" << v.data() << "\n";
     return strm.str();
   }
-  std::string save_edge(graph_type::edge_type e) { return ""; }
+  std::string save_edge(graph_type::edge_type e) {
+  	std::stringstream strm;
+    strm << e.source().id() << "\t" << e.target().id() << "\n";
+    return strm.str(); 
+  }
 }; // end of pagerank writer
 
 
@@ -223,6 +227,10 @@ int main(int argc, char** argv) {
   clopts.attach_option("saveprefix", saveprefix,
                        "If set, will save the resultant pagerank to a "
                        "sequence of files with prefix saveprefix");
+  std::string savetype;
+	clopts.attach_option("savetype", savetype,
+						 "If vertex, will save the resultant vertex, else "
+						 "it will save the egdes");
 
   if(!clopts.parse(argc, argv)) {
     dc.cout() << "Error in parsing command line arguments." << std::endl;
@@ -287,11 +295,33 @@ int main(int argc, char** argv) {
 
   // Save the final graph -----------------------------------------------------
   if (saveprefix != "") {
+    if (savetype == "edge") {
+    graph.save(saveprefix, pagerank_writer(),
+               false,    // do not gzip
+               false,     // do not save vertices
+               true);   // save edges
+    }
+    else if (savetype == "vertex") {
     graph.save(saveprefix, pagerank_writer(),
                false,    // do not gzip
                true,     // save vertices
                false);   // do not save edges
+    }
+    else if (savetype == "all") {
+    graph.save(saveprefix + "_edge", pagerank_writer(),
+               false,    // do not gzip
+               false,     // do not save vertices
+               true,    // save edges
+               1);       // one file per machine
+
+    graph.save(saveprefix + "_vertex" , pagerank_writer(),
+               false,    // do not gzip
+               true,     // save vertices
+               false,    // do not save edges
+               1);       // one file per machine
+    }
   }
+  
 
   // Tear-down communication layer and quit -----------------------------------
   graphlab::mpi_tools::finalize();

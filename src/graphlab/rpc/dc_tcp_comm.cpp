@@ -371,7 +371,9 @@ namespace graphlab {
       logstream(LOG_INFO) << "Incoming connection from "
                           << inet_ntoa(otheraddr->sin_addr) << std::endl;
       ASSERT_LT(id, all_addrs.size());
-      ASSERT_EQ(all_addrs[id], addr);
+
+	  //xie temporarily delete
+      //ASSERT_EQ(all_addrs[id], addr);
       insock_lock.lock();
       ASSERT_EQ(sock[id].insock, -1);
       sock[id].insock = newsock;

@@ -100,7 +100,14 @@ struct vertex_data {
    */
   vertex_data() : nupdates(0), residual(1) { randomize(); } 
   /** \brief Randomizes the latent factor */
-  void randomize() { factor.resize(NLATENT); factor.setRandom(); }
+  void randomize() { factor.resize(NLATENT); /*factor.setRandom();*/ }
+
+  void randomize_stable(size_t seed) {
+  	//factor.setRandom(seed); 
+	for(size_t i=0; i<NLATENT; i++)
+		factor(i,0) = seed%NLATENT+i;
+  }
+   
   /** \brief Save the vertex data to a binary archive */
   void save(graphlab::oarchive& arc) const { 
     arc << nupdates << residual << factor;        
@@ -110,6 +117,7 @@ struct vertex_data {
     arc >> nupdates >> residual >> factor;
   }
 }; // end of vertex data
+
 
 
 size_t vertex_data::NLATENT = 20;
@@ -162,6 +170,10 @@ stats_info count_edges(const graph_type::edge_type & edge){
   ret.max_item = (-edge.target().id()-SAFE_NEG_OFFSET);
   return ret;
 }
+
+
+//xie insert
+void init_vertex(graph_type::vertex_type& vertex) { vertex.data().randomize_stable(vertex.lvid%1000); }
 
 
 
@@ -647,6 +659,10 @@ int main(int argc, char** argv) {
       << "\n Edge balance ratio: " 
       << float(graph.num_local_edges())/graph.num_edges()
       << std::endl;
+
+  // xie insert  make intialization stable
+   graph.transform_vertices(init_vertex);
+
  
   dc.cout() << "Creating engine" << std::endl;
   engine_type engine(dc, graph, exec_type, clopts);
@@ -658,6 +674,7 @@ int main(int argc, char** argv) {
   ASSERT_TRUE(success);
   
 
+ 
   // Signal all vertices on the vertices on the left (liberals) 
   engine.map_reduce_vertices<graphlab::empty>(als_vertex_program::signal_left);
   info = graph.map_reduce_edges<stats_info>(count_edges);
