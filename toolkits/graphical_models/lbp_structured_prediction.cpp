@@ -595,7 +595,7 @@ int main(int argc, char** argv) {
   graphlab::command_line_options clopts(description);
   std::string prior_dir; 
   std::string graph_dir;
-  std::string output_dir = "pred";
+  std::string output_dir = "";
   std::string exec_type = "async";
   bool map = false;
   clopts.attach_option("prior", prior_dir,
@@ -661,20 +661,22 @@ int main(int argc, char** argv) {
     << "Update Rate (updates/second): " 
     << engine.num_updates() / runtime << std::endl;
     
-    
-  std::cout << "Saving predictions" << std::endl;
-  const bool gzip_output = false;
-  const bool save_vertices = true;
-  const bool save_edges = false;
-  const size_t threads_per_machine = 2;
-  if(map) {
-    graph.save(output_dir, map_prediction_saver(),
-               gzip_output, save_vertices, 
-               save_edges, threads_per_machine);
-  } else { 
-    graph.save(output_dir, belief_prediction_saver(),
-               gzip_output, save_vertices, 
-               save_edges, threads_per_machine);
+
+  if(output_dir!=""){
+	  std::cout << "Saving predictions" << std::endl;
+	  const bool gzip_output = false;
+	  const bool save_vertices = true;
+	  const bool save_edges = false;
+	  const size_t threads_per_machine = 2;
+	  if(map) {
+	    graph.save(output_dir, map_prediction_saver(),
+	               gzip_output, save_vertices, 
+	               save_edges, threads_per_machine);
+	  } else { 
+	    graph.save(output_dir, belief_prediction_saver(),
+	               gzip_output, save_vertices, 
+	               save_edges, threads_per_machine);
+	  }
   }
 
 
