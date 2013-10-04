@@ -2879,7 +2879,7 @@ namespace graphlab {
 			double thro = lastactive/3.0/this_iter_time;
 			total_act+=total_active_vertices;
 			logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
-				<<" , lastactive "<<lastactive = total_active_vertices
+				<<" , lastactive "<<total_active_vertices
 				<<" , thro "<<thro
 				<<std::endl;
 			lastactive = total_active_vertices;
