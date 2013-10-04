@@ -1195,7 +1195,8 @@ namespace graphlab {
       */
     execution_status::status_enum start() {
       bool old_fasttrack = rmi.dc().set_fast_track_requests(false);
-      logstream(LOG_INFO) << "Spawning " << nfibers << " threads" << std::endl;
+      if (rmi.procid() == 0)
+	  	logstream(LOG_INFO) << "Spawning " << nfibers << " threads" << std::endl;
       ASSERT_TRUE(scheduler_ptr != NULL);
       consensus->reset();
 

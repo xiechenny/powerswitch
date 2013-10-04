@@ -576,6 +576,7 @@ namespace graphlab {
 	  
 		  //adaptive switch
 		  double rate_AvsS;
+		  double thro_A;
 		  size_t A_Sampled_Iters;
 		  
 		  // threshold in SYNC
@@ -822,8 +823,18 @@ namespace graphlab {
 				  if (rmi.procid() == 0)
 					  logstream(LOG_EMPH) << "Engine Option: set ASYNC run tasknum: "<< tasknum << std::endl;
 			  }
-			 // else if(){
-			 // }
+			  else if(opt == "a_thro"){
+			  	  opts.get_engine_args().get_option("a_thro", thro_A);
+				  if (rmi.procid() == 0)
+					  logstream(LOG_EMPH) << "Engine Option: set ASYNC throughput: "<< thro_A << std::endl;
+			  	
+			  }
+			  else if(opt == "rate_AvsS"){
+			  	  opts.get_engine_args().get_option("rate_AvsS", rate_AvsS);
+				  if (rmi.procid() == 0)
+					  logstream(LOG_EMPH) << "Engine Option: set A/S rate: "<< rate_AvsS << std::endl;
+			  	
+			  }
 			  //========= SYNC setting
 			  else if(opt == "s_min_iterations"){
 				  opts.get_engine_args().get_option("s_min_iterations", X_S_Min_Iters);
@@ -2863,6 +2874,16 @@ namespace graphlab {
 			avg_inc_rate = avg_line[now]-avg_line[(iteration_counter+10)%11];
 		}
 
+		if (rmi.procid() == 0 ){
+			double this_iter_time = globaltimer.current_time_millis()-timelast;
+			double thro = lastactive/3.0/this_iter_time;
+			lastactive = total_active_vertices;
+			total_act+=total_active_vertices;
+			logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
+				<<" , thro "<<thro
+				<<std::endl;
+		}
+		timelast = globaltimer.current_time_millis();
 
 		if(running_mode==X_MANUAL){
 			if(iteration_counter==switch_iter){
