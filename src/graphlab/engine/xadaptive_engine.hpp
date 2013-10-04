@@ -2876,7 +2876,7 @@ namespace graphlab {
 
 		if (rmi.procid() == 0 ){
 			double this_iter_time = globaltimer.current_time_millis()-timelast;
-			double thro = lastactive/3.0/this_iter_time;
+			double thro = lastactive/this_iter_time/rmi.numprocs();
 			total_act+=total_active_vertices;
 			logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 				<<" , lastactive "<<total_active_vertices
