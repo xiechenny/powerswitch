@@ -2857,7 +2857,7 @@ namespace graphlab {
 			lastactive = total_active_vertices;
 			total_act+=total_active_vertices;
 		}*/
-	    timelast = globaltimer.current_time_millis();
+	    //timelast = globaltimer.current_time_millis();
 
 		
 		// clear counters
