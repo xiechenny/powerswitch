@@ -2752,7 +2752,7 @@ namespace graphlab {
 	  }
 
 
-	  double timelast = 0;
+	  double timelast = globaltimer.current_time_millis();
 	  size_t lastactive = 0;
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
@@ -2877,11 +2877,12 @@ namespace graphlab {
 		if (rmi.procid() == 0 ){
 			double this_iter_time = globaltimer.current_time_millis()-timelast;
 			double thro = lastactive/3.0/this_iter_time;
-			lastactive = total_active_vertices;
 			total_act+=total_active_vertices;
 			logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
+				<<" , lastactive "<<lastactive = total_active_vertices
 				<<" , thro "<<thro
 				<<std::endl;
+			lastactive = total_active_vertices;
 		}
 		timelast = globaltimer.current_time_millis();
 
