@@ -1685,6 +1685,7 @@ namespace graphlab {
 			}
 			double xstart = globaltimer.current_time_millis();	   
 		    double lastsampled = xstart;
+			double preexecuted = 0;
 			size_t lastact = 0;
 			
 			while(1) {
@@ -1764,10 +1765,13 @@ namespace graphlab {
 						  //	logstream(LOG_EMPH)<< threadid << ": ---------------- "<< actn<<" "<<avg_inc_rate
 						  //		<<std::endl;
 					  }
+					  size_t tmp = programs_executed.value-preexecuted;
+					  preexecuted = programs_executed.value;
 					  
-					  logstream(LOG_EMPH)<< rmi.procid() << ": ------- is living------ completed task "<<programs_executed.value
-					  		<<"thro"<<(programs_executed.value/(globaltimer.current_time_millis()-lastsampled))
+					  logstream(LOG_EMPH)<< rmi.procid() << ": ------- is living------ completed task "<<tmp
+					  		<<"thro"<<(tmp/(globaltimer.current_time_millis()-lastsampled))
 					  		<<std::endl;
+		
 					  
 					  lastsampled = globaltimer.current_time_millis();
 					  ++iteration_counter;
