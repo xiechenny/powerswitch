@@ -1745,7 +1745,7 @@ namespace graphlab {
 				}
 				else {
 				  double avg_inc_rate = 0;
-				  if(globaltimer.current_time_millis()-lastsampled>800){
+				  if(globaltimer.current_time_millis()-lastsampled>8000){
 					  size_t tmp = xmessages.num_adds();
 					  size_t actn = tmp - lastact;
 					  lastact = tmp;
@@ -1764,10 +1764,15 @@ namespace graphlab {
 						  //	logstream(LOG_EMPH)<< threadid << ": ---------------- "<< actn<<" "<<avg_inc_rate
 						  //		<<std::endl;
 					  }
+					  
+					  logstream(LOG_EMPH)<< rmi.procid() << ": ------- is living------ completed task "<<programs_executed.value
+					  		<<"thro"<<(programs_executed.value/(globaltimer.current_time_millis()-lastsampled))
+					  		<<std::endl;
+					  
 					  lastsampled = globaltimer.current_time_millis();
 					  ++iteration_counter;
 				  }
-				  
+
 				  if(running_mode==X_MANUAL){
 					  if((avg_inc_rate>0)&&(programs_executed.value>tasknum)){
 						  first_time_start = false;
@@ -1786,20 +1791,6 @@ namespace graphlab {
 					  //size_t finished_t = programs_executed.value;
 					  size_t actn = xmessages.num_act();
 				 
-					  //if(//( actn*rmi.numprocs()>(X_THRESHOLD_hig*graph.num_vertices()) ){
-					  //(programs_executed.value>X_A_Threshold_low*10000)
-					  /*||(programs_executed.value>6000)*///){
-						  //logstream(LOG_INFO)<<threadid<<": actn "<<actn<<" , numv "<<graph.num_vertices()<<std::endl;
-						  //thro = (programs_executed.value/(globaltimer.current_time_millis()-xstart));
-						/*  first_time_start = false;
-						  //set prepare to stop
-						  stop_async = true;
-						  countoverhead = globaltimer.current_time_millis();
-						  // put everyone in endgame
-						  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
-							  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
-		  
-					  }*/
 	  
 				  }
 				}
@@ -1925,7 +1916,7 @@ namespace graphlab {
 			  }
 	  
 			//xie insert record overhead
-			if(!first_time_start)
+			if((rmi.procid()==0)&&(!first_time_start))
 			  logstream(LOG_INFO)<<rmi.procid()<<"-"<<fiber_control::get_worker_id()
 				  <<"  SYNC-ASYNC switch overhead "<<globaltimer.current_time_millis()-countoverhead<<std::endl;
 			
