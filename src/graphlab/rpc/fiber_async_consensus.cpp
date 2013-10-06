@@ -162,9 +162,9 @@ namespace graphlab {
             if (cond[i] != 0) fiber_control::schedule_tid(cond[i]);
           }
         }
-        if (oldnumactive == 0 && !done) {
-          logstream(LOG_INFO) << rmi.procid() << ": Waking" << std::endl;
-        }
+        //if (oldnumactive == 0 && !done) {
+        //  logstream(LOG_INFO) << rmi.procid() << ": Waking" << std::endl;
+        //}
 
       }
       m.unlock();

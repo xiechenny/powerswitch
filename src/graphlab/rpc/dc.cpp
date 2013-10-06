@@ -155,7 +155,8 @@ distributed_control::distributed_control(dc_init_param initparam) {
 
 distributed_control::~distributed_control() {
   distributed_services->full_barrier();
-  logstream(LOG_INFO) << "Shutting down distributed control " << std::endl;
+  if(last_dc_procid==0)
+  	logstream(LOG_INFO) << "Shutting down distributed control " << std::endl;
   FREE_CALLBACK_EVENT(EVENT_NETWORK_BYTES);
   FREE_CALLBACK_EVENT(EVENT_RPC_CALLS);
   // call all deletion callbacks
@@ -183,12 +184,13 @@ distributed_control::~distributed_control() {
   // shutdown function call handlers
   for (size_t i = 0;i < fcallqueue.size(); ++i) fcallqueue[i].stop_blocking();
   fcallhandlers.join();
+  if(last_dc_procid==0){
   logstream(LOG_INFO) << "Bytes Sent: " << bytessent << std::endl;
   logstream(LOG_INFO) << "Calls Sent: " << calls_sent() << std::endl;
   logstream(LOG_INFO) << "Network Sent: " << network_bytes_sent() << std::endl;
   logstream(LOG_INFO) << "Bytes Received: " << bytesreceived << std::endl;
   logstream(LOG_INFO) << "Calls Received: " << calls_received() << std::endl;
-
+  }
   delete comm;
 
 }
