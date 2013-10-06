@@ -1283,11 +1283,6 @@ namespace graphlab {
 					rmi.remote_call(i, &xadaptive_engine::xset_endgame_mode);
 				  } 
 			  }
-			  //xie insert
-			  /*if(stop_async){
-				  consensus->cancel_critical_section(threadid);
-				  return true;
-				  }*/
 			  
 			  bool ret = consensus->end_done_critical_section(threadid);
 	  
@@ -1301,7 +1296,7 @@ namespace graphlab {
 								   << "\tCancelled at "<< globaltimer.current_time_millis()<< std::endl;
 				
 				logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<	": "
-								   << "\tCancelled")<< std::endl;
+								   << "\tCancelled"<< std::endl;
 			  } else {
 				logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<	": "
 								   << "\tDying" << " (" << fiber_control::get_tid() << ")" << std::endl;
