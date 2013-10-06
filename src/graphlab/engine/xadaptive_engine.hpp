@@ -1765,13 +1765,14 @@ namespace graphlab {
 						  //	logstream(LOG_EMPH)<< threadid << ": ---------------- "<< actn<<" "<<avg_inc_rate
 						  //		<<std::endl;
 					  }
-					  size_t tmp2 = programs_executed.value-preexecuted;
+
+					  /*size_t tmp2 = programs_executed.value-preexecuted;
 					  preexecuted = programs_executed.value;
 					  
 					  logstream(LOG_EMPH)<< rmi.procid() << ": ------- is living------ completed task "<<tmp2
 					  		<<" ,thro "<<(tmp2/(globaltimer.current_time_millis()-lastsampled))
 					  		<<std::endl;
-		
+					   */
 					  
 					  lastsampled = globaltimer.current_time_millis();
 					  ++iteration_counter;
