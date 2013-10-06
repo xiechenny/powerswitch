@@ -1275,7 +1275,7 @@ namespace graphlab {
 			  //					   << "\tTermination Double Checked" 
 			  //					   << std::endl;
 	  
-			  if((rmi.procid()==0)&&(!endgame_mode)) 
+			  //if((rmi.procid()==0)&&(!endgame_mode)) 
 			  	logstream(LOG_EMPH) << "Endgame mode"
 			  		<< "\t Executed task "<<programs_executed.value
 					<<" at "<<globaltimer.current_time_millis()
