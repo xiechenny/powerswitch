@@ -827,12 +827,15 @@ namespace graphlab {
         logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<  ": "
                              << "\tTermination Double Checked" << std::endl;
 
-        if (!endgame_mode) logstream(LOG_EMPH) << "Endgame mode\n";
-        endgame_mode = true;
-        // put everyone in endgame
-        for (procid_t i = 0;i < rmi.dc().numprocs(); ++i) {
-          rmi.remote_call(i, &async_consistent_engine::set_endgame_mode);
-        } 
+        if (!endgame_mode){
+			logstream(LOG_EMPH) << "Endgame mode\n";
+	        endgame_mode = true;
+	        // put everyone in endgame
+	        for (procid_t i = 0;i < rmi.dc().numprocs(); ++i) {
+	          rmi.remote_call(i, &async_consistent_engine::set_endgame_mode);
+	        } 
+        }
+		
         bool ret = consensus->end_done_critical_section(threadid);
         if (ret == false) {
           logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<  ": "
