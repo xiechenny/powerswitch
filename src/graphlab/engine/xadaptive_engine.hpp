@@ -606,6 +606,7 @@ namespace graphlab {
 		  double lastime;
 		  double startend;
 		  double countoverhead;
+		  atomic<uint64_t> forwarded;
 		  
 		  /**
 		   * \brief A bit (for master vertices) indicating if that vertex is active
@@ -1278,8 +1279,9 @@ namespace graphlab {
 			  if(!endgame_mode) 
 			  	logstream(LOG_EMPH) << "Endgame mode"
 			  		<< "\t Executed task "<<programs_executed.value
-					<<" at "<<globaltimer.current_time_millis()
-			  		<<"\n";
+			  		<< " forwarded "<<forwarded
+					<< " at "<<globaltimer.current_time_millis()
+			  		<< "\n";
 			  endgame_mode = true;
 			  // put everyone in endgame
 			  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i) {
@@ -1491,6 +1493,7 @@ namespace graphlab {
 			vertex_id_type vid = rec.gvid;
 			// if this is another machine's forward it
 			if (rec.owner != rmi.procid()) {
+			  forwarded.inc();
 			  rmi.remote_call(rec.owner, &engine_type::xrpc_signal, vid, msg);
 			  return;
 			}
