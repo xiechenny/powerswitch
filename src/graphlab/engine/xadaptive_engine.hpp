@@ -1271,8 +1271,9 @@ namespace graphlab {
 	  
 			
 			if (stat == sched_status::EMPTY || force_stop) {
-			  logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<  ": "
-								   << "\tTermination Double Checked" << std::endl;
+			  logstream(LOG_INFO) << rmi.procid() << "-" << threadid <<  ": "
+								   << "\tTermination Double Checked" 
+								   << "\t Executed task "<<programs_executed.value<< std::endl;
 	  
 			  if((rmi.procid()==0)&&(!endgame_mode)) logstream(LOG_EMPH) << "Endgame mode\n";
 			  endgame_mode = true;
