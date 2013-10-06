@@ -1292,9 +1292,6 @@ namespace graphlab {
 				  return true;
 			  
 			  if (ret == false) {
-			  	logstream(LOG_INFO) << rmi.procid() << "-" << threadid <<	": "
-								   << "\tCancelled at "<< globaltimer.current_time_millis()<< std::endl;
-				
 				logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<	": "
 								   << "\tCancelled"<< std::endl;
 			  } else {
@@ -1889,7 +1886,7 @@ namespace graphlab {
 	  
 			engine_start_time = timer::approx_time_seconds();
 			force_stop = false;
-			endgame_mode = false;	  
+			endgame_mode = true;//false;	  
 			programs_executed = 0;
 			exclusive_executed = 0; 	  //xie insert
 			exclusive_executed_pre = 0;   //xie insert
