@@ -1769,7 +1769,7 @@ namespace graphlab {
 					  preexecuted = programs_executed.value;
 					  
 					  logstream(LOG_EMPH)<< rmi.procid() << ": ------- is living------ completed task "<<tmp2
-					  		<<"thro"<<(tmp2/(globaltimer.current_time_millis()-lastsampled))
+					  		<<" ,thro "<<(tmp2/(globaltimer.current_time_millis()-lastsampled))
 					  		<<std::endl;
 		
 					  

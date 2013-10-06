@@ -102,7 +102,7 @@ namespace graphlab {
       All fibers must therefore be sleeping.
     */
     if (numactive == 0) {
-      logstream(LOG_INFO) << rmi.procid() << ": Termination Possible" << std::endl;
+      //logstream(LOG_INFO) << rmi.procid() << ": Termination Possible" << std::endl;
       if (hastoken) pass_the_token();
     }
     sleeping[cpuid] = true;	
