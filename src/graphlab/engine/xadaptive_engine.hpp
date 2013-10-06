@@ -570,7 +570,7 @@ namespace graphlab {
 		  double throughput;
 		  
 		  //manual switch
-		  size_t tasknum;
+		  long tasknum;
 		  size_t switch_iter;
 		  
 	  
@@ -820,6 +820,7 @@ namespace graphlab {
 			  }
 			  else if(opt == "a_tasknum"){
 				  opts.get_engine_args().get_option("a_tasknum", tasknum);
+				  tasknum = tasknum*10000;
 				  if (rmi.procid() == 0)
 					  logstream(LOG_EMPH) << "Engine Option: set ASYNC run tasknum: "<< tasknum << std::endl;
 			  }
@@ -2879,8 +2880,8 @@ namespace graphlab {
 			double thro = lastactive/this_iter_time/rmi.numprocs();
 			total_act+=total_active_vertices;
 			logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
-				<<" , lastactive "<<total_active_vertices
 				<<" , thro "<<thro
+				<<" , time "<<this_iter_time
 				<<std::endl;
 			lastactive = total_active_vertices;
 		}
