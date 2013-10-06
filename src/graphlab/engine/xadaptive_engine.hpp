@@ -606,7 +606,6 @@ namespace graphlab {
 		  double lastime;
 		  double startend;
 		  double countoverhead;
-		  atomic<uint64_t> forwarded;
 		  
 		  /**
 		   * \brief A bit (for master vertices) indicating if that vertex is active
@@ -1276,18 +1275,14 @@ namespace graphlab {
 			  //					   << "\tTermination Double Checked" 
 			  //					   << std::endl;
 	  
-			  if(!endgame_mode) 
-			  	logstream(LOG_EMPH) << "Endgame mode"
-			  		<< "\t Executed task "<<programs_executed.value
-			  		<< " forwarded "<<forwarded
-					<< " at "<<globaltimer.current_time_millis()
-			  		<< "\n";
-			  endgame_mode = true;
-			  // put everyone in endgame
-			  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i) {
-				rmi.remote_call(i, &xadaptive_engine::xset_endgame_mode);
-			  } 
-	  
+			  if(!endgame_mode){
+			  	  logstream(LOG_EMPH) << "Endgame mode\n";
+				  endgame_mode = true;
+				  // put everyone in endgame
+				  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i) {
+					rmi.remote_call(i, &xadaptive_engine::xset_endgame_mode);
+				  } 
+			  }
 			  //xie insert
 			  /*if(stop_async){
 				  consensus->cancel_critical_section(threadid);
@@ -1302,8 +1297,11 @@ namespace graphlab {
 				  return true;
 			  
 			  if (ret == false) {
+			  	logstream(LOG_INFO) << rmi.procid() << "-" << threadid <<	": "
+								   << "\tCancelled at "<< globaltimer.current_time_millis()<< std::endl;
+				
 				logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<	": "
-								   << "\tCancelled" << std::endl;
+								   << "\tCancelled")<< std::endl;
 			  } else {
 				logstream(LOG_DEBUG) << rmi.procid() << "-" << threadid <<	": "
 								   << "\tDying" << " (" << fiber_control::get_tid() << ")" << std::endl;
@@ -1493,7 +1491,6 @@ namespace graphlab {
 			vertex_id_type vid = rec.gvid;
 			// if this is another machine's forward it
 			if (rec.owner != rmi.procid()) {
-			  forwarded.inc();
 			  rmi.remote_call(rec.owner, &engine_type::xrpc_signal, vid, msg);
 			  return;
 			}
