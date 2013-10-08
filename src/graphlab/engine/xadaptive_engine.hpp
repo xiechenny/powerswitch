@@ -578,6 +578,7 @@ namespace graphlab {
 		  double rate_AvsS;
 		  double thro_A;
 		  size_t A_Sampled_Iters;
+		  double s_c;
 		  
 		  // threshold in SYNC
 		  float  X_S_Increase_Rate;   // -1/100000		  if >1 it keeps increase£¬ if >2 it is 2 exponent
@@ -2722,10 +2723,6 @@ namespace graphlab {
 	  	s_inner_signal_vset();
 		xmessages.clear();
 	  	}
-	  for(int i=0; i<11;i++){
-	  	avg_line[i] = 0;
-		active[i] = 0;
-	  	}
 
 	  float start_this_turn;		// used for set least execution time
 	  size_t total_act = 0;
@@ -2748,6 +2745,9 @@ namespace graphlab {
 
 	  double timelast = globaltimer.current_time_millis();
 	  size_t lastactive = 0;
+	  double tmpconst = -1;
+	  double last_thro = 0;
+	  
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
 		//double time_estart = globaltimer.current_time_millis();
@@ -2860,56 +2860,85 @@ namespace graphlab {
 
 		float fac = 1;
 		float avg_inc_rate = 1;
-		if(!has_max_iterations){
+
+
+		double thro_now=999999;
+		if(iteration_counter==0){
+			for(int i=0; i<11;i++){
+		  		avg_line[i] = total_active_vertices;
+				active[i] = total_active_vertices;
+		  	}
+			lastactive = total_active_vertices;
+		}
+		else //if(!has_max_iterations)
+		{
 			//fac = ((float)total_active_vertices)/graph.num_vertices();
 			size_t now = iteration_counter%11; 
 			active[now] = total_active_vertices;//fac;
-			avg_line[now] = avg_line[(iteration_counter-1)%11]+(active[now]-active[(iteration_counter-X_S_Sampled_Iters+11)%11])/X_S_Sampled_Iters;
+			avg_line[now] = avg_line[(iteration_counter+10)%11]+(active[now]-active[(iteration_counter-X_S_Sampled_Iters+11)%11])/X_S_Sampled_Iters;
 			avg_inc_rate = avg_line[now]-avg_line[(iteration_counter+10)%11];
-		}
-
-		if (rmi.procid() == 0 ){
+				
 			double this_iter_time = globaltimer.current_time_millis()-timelast;
 			double thro = lastactive/this_iter_time/rmi.numprocs();
+			if(tmpconst<0)
+				tmpconst = thro/lastactive*3;
+			else tmpconst = (tmpconst+ thro/lastactive)/2;
+			last_thro = thro;
 			total_act+=total_active_vertices;
-			logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
+			thro_now = tmpconst*total_active_vertices*rate_AvsS;
+			if (rmi.procid() == 0 )
+				logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 				<<" , thro "<<thro
+				<<" , act "<<lastactive
 				<<" , time "<<this_iter_time
+				<<" , t_now "<<thro_now
+				<<" , const "<<tmpconst
 				<<std::endl;
 			lastactive = total_active_vertices;
-		}
-		timelast = globaltimer.current_time_millis();
+			timelast = globaltimer.current_time_millis();
 
-		if(running_mode==X_MANUAL){
-			if(iteration_counter==switch_iter){
-				if (rmi.procid() == 0)
-					logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
-						<<" ,tol_active "<<total_active_vertices//<<" X_S_Increase_Rate "<<X_S_Increase_Rate
-						//<<" , total_iter_msg "<<total_msg_number
-						//<<" , total_sig_num "<<total_signal_number
-						//<<" , total_act_ver "<<total_active_vertices
-						//<<" , total_act_mir "<<total_active_mirrors
+			if(running_mode==X_MANUAL){
+				if(iteration_counter>=switch_iter){
+					if (rmi.procid() == 0)
+						if (rmi.procid() == 0 )
+							logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
+							<<" ,tol_active "<<total_active_vertices//<<" X_S_Increase_Rate "<<X_S_Increase_Rate
+							<<" ,avg_inc "<<avg_inc_rate
+							<<rmi.numprocs()<<std::endl;
+
+					countoverhead = globaltimer.current_time_millis();
+					
+					// if iteration_counter==0, next_mode_active_vertex has been set to initial signal set.
+					if(iteration_counter==0)
+						next_mode_active_vertex = asy_start_active_v;
+					else
+						next_mode_active_vertex = active_superstep;
+					
+					termination_reason = execution_status::MODE_SWITCH;
+					break;
+				}
+			}\
+			else if((avg_inc_rate<0)&&(thro_now<=thro_A)){
+					if (rmi.procid() == 0 )
+						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
+						<<" ,nor_s_thro "<<thro_now
+						<<" ,thro_A "<<thro_A
 						<<" ,avg_inc "<<avg_inc_rate
-						<<rmi.numprocs()<<std::endl;
-
-				countoverhead = globaltimer.current_time_millis();
+						<<std::endl;
+					
+					if(iteration_counter==0)
+						next_mode_active_vertex = asy_start_active_v;
+					else
+						next_mode_active_vertex = active_superstep;
+					
+					termination_reason = execution_status::MODE_SWITCH;
+					break;
 				
-				// if iteration_counter==0, next_mode_active_vertex has been set to initial signal set.
-				if(iteration_counter==0)
-					next_mode_active_vertex = asy_start_active_v;
-				else
-					next_mode_active_vertex = active_superstep;
-				
-				termination_reason = execution_status::MODE_SWITCH;
-				break;
 			}
-		}\
-		else {
-			if (rmi.procid() == 0)
-				logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
-					<<" ,avg_inc "<<avg_inc_rate
-					<<std::endl;	
+		
 		}
+		
+
 		
 		
   		//================================================================
