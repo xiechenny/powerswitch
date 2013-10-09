@@ -863,6 +863,11 @@ namespace graphlab {
 						logstream(LOG_EMPH) << "Engine Option: start with ASYNC mode "<<start_a<< std::endl;
 					  current_engine = X_ASYNC;
 				  }
+				  else {
+				  	if(rmi.procid() == 0)
+						logstream(LOG_EMPH) << "Engine Option: start with SYNC mode "<<start_a<< std::endl;
+				  		current_engine = X_SYNC;
+				  }
 			  }
 			  else if(opt == "set_a_delay"){
 				  //float threshold;
@@ -1683,6 +1688,7 @@ namespace graphlab {
 			}
 			double xstart = globaltimer.current_time_millis();	   
 		    double lastsampled = xstart;
+			double lastexecuted = 0;
 			double preexecuted = 0;
 			size_t lastact = 0;
 			
@@ -1737,9 +1743,14 @@ namespace graphlab {
 			  if(threadid%3001==0){
 			  	if(running_mode==X_SAMPLE){
 				  	double nowtime = globaltimer.current_time_millis();
-					if(programs_executed.value>tasknum){
-						throughput = programs_executed.value/(nowtime-sample_start);
-						stop_async = true;
+					if(nowtime-lastsampled>2000)//(programs_executed.value>tasknum)
+					{
+						throughput = (programs_executed.value-lastexecuted)/(nowtime-lastsampled);
+						//stop_async = true;
+						if(rmi.procid()==0)
+						  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<< throughput<<std::endl;
+						lastexecuted = programs_executed.value;
+						lastsampled = globaltimer.current_time_millis();
 					}
 				}
 				else {
@@ -2747,6 +2758,7 @@ namespace graphlab {
 	  size_t lastactive = 0;
 	  double tmpconst = -1;
 	  double last_thro = 0;
+	  double lasttime=timelast;
 	  
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
@@ -2886,22 +2898,33 @@ namespace graphlab {
 			last_thro = thro;
 			total_act+=total_active_vertices;
 			thro_now = tmpconst*total_active_vertices*rate_AvsS;
-			if (rmi.procid() == 0 )
+			/*if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 				<<" , thro "<<thro
 				<<" , act "<<lastactive
 				<<" , time "<<this_iter_time
 				<<" , t_now "<<thro_now
 				<<" , const "<<tmpconst
-				<<std::endl;
+				<<std::endl;*/
 			lastactive = total_active_vertices;
 			timelast = globaltimer.current_time_millis();
 
-			if(running_mode==X_MANUAL){
+			if(running_mode==X_SAMPLE){
+				double now = globaltimer.current_time_millis();
+				if(now-lasttime>2000){
+					double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
+					if (rmi.procid() == 0 )
+						logstream(LOG_EMPH)<< rmi.procid() << ": thro "<< thros
+							<<" ,time "<<(now-lasttime)
+							<<std::endl;
+					total_act=total_active_vertices;
+					lasttime = globaltimer.current_time_millis();
+				}
+			}
+			else if(running_mode==X_MANUAL){
 				if(iteration_counter>=switch_iter){
 					if (rmi.procid() == 0)
-						if (rmi.procid() == 0 )
-							logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
+						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
 							<<" ,tol_active "<<total_active_vertices//<<" X_S_Increase_Rate "<<X_S_Increase_Rate
 							<<" ,avg_inc "<<avg_inc_rate
 							<<rmi.numprocs()<<std::endl;
