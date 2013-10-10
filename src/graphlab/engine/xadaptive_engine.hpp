@@ -2911,7 +2911,7 @@ namespace graphlab {
 
 			if(running_mode==X_SAMPLE){
 				double now = globaltimer.current_time_millis();
-				if(now-lasttime>2000){
+				if(now-lasttime>4000){
 					double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ": thro "<< thros
