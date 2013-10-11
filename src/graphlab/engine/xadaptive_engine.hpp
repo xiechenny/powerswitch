@@ -1791,8 +1791,8 @@ namespace graphlab {
 						  if(rmi.procid()==0)
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 						  		<<avg_inc_rate
-								<<" ,actn "<<actn
-								<<" ,actn/durtime "<<actn/durtime
+								<<" ,actn "<<avg_line[now]
+								<<" ,actn/durtime "<<avg_line[now]/durtime
 								<<" ,thro "<<throughput
 								<<std::endl;
 						//  countoverhead = globaltimer.current_time_millis();
