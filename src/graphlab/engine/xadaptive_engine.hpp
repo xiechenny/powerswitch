@@ -1766,10 +1766,7 @@ namespace graphlab {
 					  lastact = tmp;
 					  size_t now = iteration_counter%11; 
 					  active[now] = actn;
-					  if(iteration_counter==0){
-				  			active[i] = actn;
-					  }
-					  else {
+					  {
 						  avg_line[now] = avg_line[(iteration_counter-1)%11]-(active[(iteration_counter-A_Sampled_Iters+11)%11]-active[now])/A_Sampled_Iters;
 						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter-1)%11])/avg_line[(iteration_counter-1)%11];
 						  //if(rmi.procid()==0)
