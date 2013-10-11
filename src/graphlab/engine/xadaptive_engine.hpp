@@ -1787,7 +1787,7 @@ namespace graphlab {
 						  		<<avg_inc_rate
 								<<" ,actn "<<actn
 								<<" ,programs_executed.value "<<programs_executed.value
-								<<" diff "<<(actn-programs_executed.value);
+								<<" diff "<<(actn-programs_executed.value)
 								<<std::endl;
 						//  countoverhead = globaltimer.current_time_millis();
 						  // put everyone in switch mode
