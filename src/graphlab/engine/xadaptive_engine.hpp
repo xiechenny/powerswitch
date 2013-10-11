@@ -1762,7 +1762,7 @@ namespace graphlab {
 					  //lastexecuted = programs_executed.value;
 						
 					  size_t tmp = xmessages.num_act();
-					  actn = tmp// - lastact;
+					  actn = tmp;// - lastact;
 					  lastact = tmp;
 					  size_t now = iteration_counter%11; 
 					  active[now] = actn;
