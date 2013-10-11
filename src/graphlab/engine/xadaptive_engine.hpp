@@ -1780,9 +1780,9 @@ namespace graphlab {
 					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
-					 // if((avg_inc_rate>0)&&(actn/durtime*rate_AvsS>thro_A)){
+					  if((avg_inc_rate>0)&&(actn/durtime*rate_AvsS>thro_A)){
 					  	//  first_time_start = false;
-						  //set prepare to stop
+						//set prepare to stop
 						//  stop_async = true;
 						if(rmi.procid()==0)
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
@@ -1791,7 +1791,7 @@ namespace graphlab {
 						  // put everyone in switch mode
 						//  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 						// 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
-					 // } 
+					  } 
 					  }
 				  }
 
