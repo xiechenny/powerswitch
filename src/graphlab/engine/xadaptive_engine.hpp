@@ -2941,7 +2941,7 @@ namespace graphlab {
 					break;
 				}
 			}\
-			else /*if((avg_inc_rate<0)&&(thro_now<=thro_A))*/{
+			else if((avg_inc_rate<0)&&(thro_now<=thro_A)){
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 						<<" ,nor_s_thro "<<thro_now
