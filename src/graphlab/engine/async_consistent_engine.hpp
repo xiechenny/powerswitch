@@ -445,6 +445,10 @@ namespace graphlab {
       factorized_consistency = true;
       timed_termination = (size_t)(-1);
       termination_reason = execution_status::UNSET;
+
+	  //xie insert
+	  endgame_mode = false;
+	  
       set_options(opts);
       initialize();
       rmi.barrier();
@@ -489,7 +493,14 @@ namespace graphlab {
           opts.get_engine_args().get_option("use_cache", use_cache);
           if (rmi.procid() == 0)
             logstream(LOG_EMPH) << "Engine Option: use_cache = " << use_cache << std::endl;
-        } else {
+        }
+		//xie insert
+		else if (opt == "endgame") {
+			opts.get_engine_args().get_option("endgame", endgame_mode);
+		 	if (rmi.procid() == 0)
+				logstream(LOG_EMPH) << "Engine Option: endgame= " << endgame_mode << std::endl;
+		}
+		else {
           logstream(LOG_FATAL) << "Unexpected Engine Option: " << opt << std::endl;
         }
       }
@@ -1219,7 +1230,7 @@ namespace graphlab {
 
       engine_start_time = timer::approx_time_seconds();
       force_stop = false;
-      endgame_mode = false;
+      //endgame_mode = false;
       programs_executed = 0;
       launch_timer.start();
 
