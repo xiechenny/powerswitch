@@ -1755,9 +1755,11 @@ namespace graphlab {
 				}
 				else {
 				  double avg_inc_rate = 0;
-				  if(globaltimer.current_time_millis()-lastsampled>8000){
+				  size_t actn = 0;
+				  double durtime = globaltimer.current_time_millis()-lastsampled;
+				  if(durtime>4000){
 					  size_t tmp = xmessages.num_adds();
-					  size_t actn = tmp - lastact;
+					  actn = tmp - lastact;
 					  lastact = tmp;
 					  size_t now = iteration_counter%11; 
 					  active[now] = actn;
@@ -1774,17 +1776,22 @@ namespace graphlab {
 						  //	logstream(LOG_EMPH)<< threadid << ": ---------------- "<< actn<<" "<<avg_inc_rate
 						  //		<<std::endl;
 					  }
-
-					  /*size_t tmp2 = programs_executed.value-preexecuted;
-					  preexecuted = programs_executed.value;
-					  
-					  logstream(LOG_EMPH)<< rmi.procid() << ": ------- is living------ completed task "<<tmp2
-					  		<<" ,thro "<<(tmp2/(globaltimer.current_time_millis()-lastsampled))
-					  		<<std::endl;
-					   */
-					  
 					  lastsampled = globaltimer.current_time_millis();
 					  ++iteration_counter;
+
+					  if(running_mode==X_ADAPTIVE){
+					  if((avg_inc_rate>0)&&(actn/durtime*rate_AvsS>thro_A)){
+					  	  first_time_start = false;
+						  //set prepare to stop
+						  stop_async = true;
+						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
+						  		<<avg_inc_rate<<", actn/durtime "<<actn/durtime<<std::endl;
+						  countoverhead = globaltimer.current_time_millis();
+						  // put everyone in switch mode
+						  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
+						 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
+					  } 
+					  }
 				  }
 
 				  if(running_mode==X_MANUAL){
@@ -1799,14 +1806,7 @@ namespace graphlab {
 								  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 					  }
 				  }
-				  else if(running_mode==X_ADAPTIVE){
-					  size_t local_join = xmessages.num_joins();
-					  size_t local_task = xmessages.num_adds();
-					  //size_t finished_t = programs_executed.value;
-					  size_t actn = xmessages.num_act();
-				 
-	  
-				  }
+				  
 				}
 					  
 			  }
