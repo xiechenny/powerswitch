@@ -1690,7 +1690,6 @@ namespace graphlab {
 		    double lastsampled = xstart;
 			double lastexecuted = 0;
 			double preexecuted = 0;
-			size_t lastact = 0;
 	
 			while(1) {
 			  if(stop_async)  break;
@@ -1755,39 +1754,34 @@ namespace graphlab {
 				}
 				else {
 				  double avg_inc_rate = 0;
-				  size_t actn = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
-				  if(durtime>500){
+				  if(durtime>1000){
 				  	  //throughput = (programs_executed.value-lastexecuted)/durtime;
-					  //lastexecuted = programs_executed.value;
+					  
 						
-					  size_t tmp = xmessages.num_act();
-					  actn = tmp;// - lastact;
-					  lastact = tmp;
+					  size_t tmpact = xmessages.num_act();
+					  size_t tmpexec = programs_executed.value;
+	
 					  size_t now = iteration_counter%11; 
-					  active[now] = actn;
+					  active[now] = tmpact-tmpexec;
 					  {
 						  avg_line[now] = avg_line[(iteration_counter-1)%11]-(active[(iteration_counter-A_Sampled_Iters+11)%11]-active[now])/A_Sampled_Iters;
 						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter-1)%11])/avg_line[(iteration_counter-1)%11];
-						  //if(rmi.procid()==0)
-						  //	logstream(LOG_EMPH)<< threadid << ": ---------------- "<< actn<<" "<<avg_inc_rate
-						  //		<<std::endl;
 					  }
 					  lastsampled = globaltimer.current_time_millis();
 					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
-					  //if((avg_inc_rate>0)&&(actn/durtime>1)&&(throughput>thro_A))
+					  if((avg_inc_rate>0)&&(active[now]>(thro_A*durtime/rate_AvsS)))
 					  {
-					  	 // first_time_start = false;
+					  	  first_time_start = false;
 						  //set prepare to stop
-						 // stop_async = true;
+						  stop_async = true;
 						  if(rmi.procid()==0)
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 						  		<<avg_inc_rate
-								<<" ,actn "<<actn
-								<<" ,programs_executed.value "<<programs_executed.value
-								<<" diff "<<(actn-programs_executed.value)
+								<<" ,actn "<<active[now]
+								<<" ,thro_A "<<thro_A
 								<<std::endl;
 						//  countoverhead = globaltimer.current_time_millis();
 						  // put everyone in switch mode
@@ -1813,30 +1807,7 @@ namespace graphlab {
 				}
 					  
 			  }
-			  
-			 /* if((print<3)&&(fiber_control::get_worker_id()==0) )
-			  {
-				  double nowtime = globaltimer.current_time_millis();
-				  if(nowtime-lastime >200){
-					  size_t scounter = 0;
-					  size_t ecounter = 0;
-					  for(size_t i=0;i<30; i++){
-						  scounter+=startcounter[i];
-						  ecounter+=endcounter[i];
-					  }
-					  logstream(LOG_INFO)<<rmi.procid()<<":"
-						  <<" s&e "<<scounter<<" "<<ecounter
-						  //<<" differ "<<(scounter-ecounter)
-						  <<" s&e_a "<<(scounter-lastcounters)/(nowtime-lastime)
-						  <<" "<<(ecounter-lastcounter)/(nowtime-lastime)
-						  <<" print "<<print
-						  <<" At "<<nowtime<<std::endl; 
-					  lastime = nowtime;
-					  lastcounter = ecounter;
-					  lastcounters = scounter;
-					  print++;
-				  }
-			  }*/
+	
 			
 			  if(stop_async)  break;
 	  
