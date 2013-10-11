@@ -137,7 +137,7 @@ namespace graphlab {
         ret_val = message_vector[idx].value;
 		//xie insert
 		active_v.clear_bit(idx);
-		//actcounter[lockidx] -= 1;
+		actcounter[lockidx] -= 1;
 		
         message_vector[idx].clear();
         has_val = true;
