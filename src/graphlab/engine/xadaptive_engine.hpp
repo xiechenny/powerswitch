@@ -1756,9 +1756,6 @@ namespace graphlab {
 				  double avg_inc_rate = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
 				  if(durtime>500){
-				  	  //throughput = (programs_executed.value-lastexecuted)/durtime;
-					  
-						
 					  size_t tmpact = xmessages.num_act();
 					  size_t tmpexec = programs_executed.value;
 	
@@ -1771,34 +1768,36 @@ namespace graphlab {
 						  avg_line[now] = avg_line[(iteration_counter-1)%11]-(active[(iteration_counter-A_Sampled_Iters+11)%11]-active[now])/A_Sampled_Iters;
 						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter+6)%11])/avg_line[(iteration_counter+6)%11];
 					  }
-					  lastsampled = globaltimer.current_time_millis();
-					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
-					  if(rmi.procid()==0)
-						  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-						  		<<avg_inc_rate
-								<<" ,actn "<<active[now]
-								<<" ,tmpact "<<tmpact
-								<<" ,thro_A*durtime/rate_AvsS "<<thro_A*durtime/rate_AvsS
-								<<std::endl;
-					  if((avg_inc_rate>0)&&(active[now]>(thro_A*durtime/rate_AvsS)))
-					  {
-					  	  first_time_start = false;
-						  //set prepare to stop
-						  stop_async = true;
-						  //if(rmi.procid()==0)
-						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
-						  		<<avg_inc_rate
-								<<" ,actn "<<active[now]
-								<<" ,thro_A "<<thro_A
-								<<std::endl;
-						  countoverhead = globaltimer.current_time_millis();
-						  // put everyone in switch mode
-						  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
-						 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
-					  } 
+						  double comparable = thro_A*durtime/rate_AvsS;
+						  if(rmi.procid()==0)
+							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+							  		<<avg_inc_rate
+									<<" ,actn "<<active[now]
+									<<" ,tmpact "<<tmpact
+									<<" ,thro_A*durtime/rate_AvsS "<<comparable
+									<<std::endl;
+						  if((avg_inc_rate>0)&&(active[now]>comparable))
+						  {
+						  	  first_time_start = false;
+							  //set prepare to stop
+							  stop_async = true;
+							  //if(rmi.procid()==0)
+							  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
+							  		<<avg_inc_rate
+									<<" ,actn "<<active[now]
+									<<" ,comparable "<<comparable
+									<<std::endl;
+							  countoverhead = globaltimer.current_time_millis();
+							  // put everyone in switch mode
+							  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
+							 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
+						  } 
 					  }
+					  
+					  lastsampled = globaltimer.current_time_millis();
+					  ++iteration_counter;
 				  }
 
 				  if(running_mode==X_MANUAL){
@@ -2759,6 +2758,7 @@ namespace graphlab {
 		if(rmi.procid() == 0 && print_this_round) {
 		  logstream(LOG_EMPH)
 			<< rmi.procid() << ": Starting iteration: " << iteration_counter
+			<< " lastact "<<lastactive
 			<< std::endl;
 		  last_print = elapsed_seconds();
 		}
