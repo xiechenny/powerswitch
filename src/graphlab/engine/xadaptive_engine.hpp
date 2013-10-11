@@ -1691,7 +1691,7 @@ namespace graphlab {
 			double lastexecuted = 0;
 			double preexecuted = 0;
 			size_t lastact = 0;
-			
+	
 			while(1) {
 			  if(stop_async)  break;
 			  
@@ -1767,10 +1767,7 @@ namespace graphlab {
 					  size_t now = iteration_counter%11; 
 					  active[now] = actn;
 					  if(iteration_counter==0){
-					  	for(int i=0; i<11;i++){
-				  			avg_line[i] = actn;
 				  			active[i] = actn;
-				  		}
 					  }
 					  else {
 						  avg_line[now] = avg_line[(iteration_counter-1)%11]-(active[(iteration_counter-A_Sampled_Iters+11)%11]-active[now])/A_Sampled_Iters;
