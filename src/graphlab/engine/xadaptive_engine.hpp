@@ -1772,6 +1772,12 @@ namespace graphlab {
 					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
+					  if(rmi.procid()==0)
+						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
+						  		<<avg_inc_rate
+								<<" ,actn "<<active[now]
+								<<" ,thro_A "<<thro_A
+								<<std::endl;
 					  if((avg_inc_rate>0)&&(active[now]>(thro_A*durtime/rate_AvsS)))
 					  {
 					  	  first_time_start = false;
