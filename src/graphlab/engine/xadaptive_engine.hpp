@@ -1763,7 +1763,10 @@ namespace graphlab {
 					  size_t tmpexec = programs_executed.value;
 	
 					  size_t now = iteration_counter%11; 
-					  active[now] = tmpact-tmpexec;
+					  if(tmpact>tmpexec)
+					  	active[now] = tmpact-tmpexec;
+					  else active[now]=0;
+					  
 					  {
 						  avg_line[now] = avg_line[(iteration_counter-1)%11]-(active[(iteration_counter-A_Sampled_Iters+11)%11]-active[now])/A_Sampled_Iters;
 						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter+6)%11])/avg_line[(iteration_counter+6)%11];
