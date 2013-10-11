@@ -1758,7 +1758,7 @@ namespace graphlab {
 				  size_t actn = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
 				  if(durtime>4000){
-					  size_t tmp = xmessages.num_adds();
+					  size_t tmp = xmessages.num_act();
 					  actn = tmp - lastact;
 					  lastact = tmp;
 					  size_t now = iteration_counter%11; 
