@@ -1758,6 +1758,9 @@ namespace graphlab {
 				  size_t actn = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
 				  if(durtime>2000){
+				  	  throughput = (programs_executed.value-lastexecuted)/durtime;
+					  lastexecuted = programs_executed.value;
+						
 					  size_t tmp = xmessages.num_act();
 					  actn = tmp;// - lastact;
 					  lastact = tmp;
@@ -1780,7 +1783,7 @@ namespace graphlab {
 					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
-					  if((avg_inc_rate>0)&&(actn/durtime>6))
+					  //if((avg_inc_rate>0))//&&(actn/durtime>6))
 					  {
 					  	//  first_time_start = false;
 						//set prepare to stop
@@ -1789,7 +1792,9 @@ namespace graphlab {
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 						  		<<avg_inc_rate
 								<<" ,actn "<<actn
-								<<" ,actn/durtime "<<actn/durtime<<std::endl;
+								<<" ,actn/durtime "<<actn/durtime
+								<<" ,thro "<<throughput
+								<<std::endl;
 						//  countoverhead = globaltimer.current_time_millis();
 						  // put everyone in switch mode
 						//  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
