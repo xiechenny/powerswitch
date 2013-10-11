@@ -1779,7 +1779,7 @@ namespace graphlab {
 						  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 						  		<<avg_inc_rate
 								<<" ,actn "<<active[now]
-								<<" ,thro_A "<<thro_A
+								<<" ,tmpact "<<tmpact
 								<<" ,thro_A*durtime/rate_AvsS "<<thro_A*durtime/rate_AvsS
 								<<std::endl;
 					  if((avg_inc_rate>0)&&(active[now]>(thro_A*durtime/rate_AvsS)))
