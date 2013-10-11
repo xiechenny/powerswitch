@@ -226,6 +226,12 @@ namespace graphlab {
 
     /// not thread safe. Clears all contents
     void clear() {
+      for (size_t i = 0; i < 65536; ++i) {
+        joincounter[i] = 0; 
+        addcounter[i] = 0;
+		actcounter[i] = 0;
+      }
+	
       for (size_t i = 0; i < message_vector.size(); ++i) clear(i);
 	  active_v.clear();
     }

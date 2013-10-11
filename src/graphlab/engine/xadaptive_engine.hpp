@@ -2717,6 +2717,7 @@ namespace graphlab {
 	  	s_inner_signal_vset();
 		xmessages.clear();
 	  	}
+	  xmessages.clear();
 
 	  float start_this_turn;		// used for set least execution time
 	  size_t total_act = 0;
@@ -2930,6 +2931,7 @@ namespace graphlab {
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 						<<" ,nor_s_thro "<<thro_now
 						<<" ,thro_A "<<thro_A
+						<<" ,act "<<total_active_vertices
 						<<" ,avg_inc "<<avg_inc_rate
 						<<std::endl;
 					
@@ -3059,7 +3061,7 @@ namespace graphlab {
 			if (rmi.procid() == 0)
 				logstream(LOG_EMPH) << "Switch to ASYNC. At "<<(globaltimer.current_time_millis()-x_start_time_m)<<std::endl;
 			termination_reason = xstart();
-			}
+		}
 		else{
 			//switch to SYNC
 			if (rmi.procid() == 0)
