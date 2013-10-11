@@ -1755,7 +1755,7 @@ namespace graphlab {
 				else {
 				  double avg_inc_rate = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
-				  if(durtime>1000){
+				  if(durtime>500){
 				  	  //throughput = (programs_executed.value-lastexecuted)/durtime;
 					  
 						
