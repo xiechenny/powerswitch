@@ -1757,12 +1757,12 @@ namespace graphlab {
 				  double avg_inc_rate = 0;
 				  size_t actn = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
-				  if(durtime>2000){
-				  	  throughput = (programs_executed.value-lastexecuted)/durtime;
-					  lastexecuted = programs_executed.value;
+				  if(durtime>500){
+				  	  //throughput = (programs_executed.value-lastexecuted)/durtime;
+					  //lastexecuted = programs_executed.value;
 						
 					  size_t tmp = xmessages.num_act();
-					  actn = tmp;// - lastact;
+					  actn = tmp - lastact;
 					  lastact = tmp;
 					  size_t now = iteration_counter%11; 
 					  active[now] = actn;
@@ -1785,10 +1785,8 @@ namespace graphlab {
 						  if(rmi.procid()==0)
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 						  		<<avg_inc_rate
-								<<" ,actn "<<active[now]
+								<<" ,actn "<<actn
 								<<" ,actn_avg "<<avg_line[now]
-								<<" ,actn/durtime "<<avg_line[now]/durtime
-								<<" ,thro "<<throughput
 								<<std::endl;
 						//  countoverhead = globaltimer.current_time_millis();
 						  // put everyone in switch mode
