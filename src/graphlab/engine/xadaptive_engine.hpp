@@ -1787,7 +1787,7 @@ namespace graphlab {
 					  	  first_time_start = false;
 						  //set prepare to stop
 						  stop_async = true;
-						  if(rmi.procid()==0)
+						  //if(rmi.procid()==0)
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 						  		<<avg_inc_rate
 								<<" ,actn "<<active[now]
