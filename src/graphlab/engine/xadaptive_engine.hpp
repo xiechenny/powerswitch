@@ -2941,7 +2941,7 @@ namespace graphlab {
 					break;
 				}
 			}\
-			else if((avg_inc_rate<0)&&(thro_now<=thro_A)){
+			else /*if((avg_inc_rate<0)&&(thro_now<=thro_A))*/{
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 						<<" ,nor_s_thro "<<thro_now
@@ -2949,13 +2949,13 @@ namespace graphlab {
 						<<" ,avg_inc "<<avg_inc_rate
 						<<std::endl;
 					
-					if(iteration_counter==0)
+					/*if(iteration_counter==0)
 						next_mode_active_vertex = asy_start_active_v;
 					else
 						next_mode_active_vertex = active_superstep;
 					
 					termination_reason = execution_status::MODE_SWITCH;
-					break;
+					break;*/
 				
 			}
 		
