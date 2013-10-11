@@ -1783,7 +1783,7 @@ namespace graphlab {
 					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
-					  if((avg_inc_rate>0))&&(actn/durtime>1)&&(throughput>thro_A))
+					  if((avg_inc_rate>0)&&(actn/durtime>1)&&(throughput>thro_A))
 					  {
 					  	  first_time_start = false;
 						//set prepare to stop
