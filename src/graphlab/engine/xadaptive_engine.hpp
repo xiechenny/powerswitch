@@ -1780,7 +1780,7 @@ namespace graphlab {
 					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
-					  //if((avg_inc_rate>0)&&(actn/durtime*rate_AvsS>thro_A))
+					  if((avg_inc_rate>0)&&(actn/durtime>))
 					  {
 					  	//  first_time_start = false;
 						//set prepare to stop
@@ -2953,13 +2953,13 @@ namespace graphlab {
 						<<" ,avg_inc "<<avg_inc_rate
 						<<std::endl;
 					
-					/*if(iteration_counter==0)
+					if(iteration_counter==0)
 						next_mode_active_vertex = asy_start_active_v;
 					else
 						next_mode_active_vertex = active_superstep;
 					
 					termination_reason = execution_status::MODE_SWITCH;
-					break;*/
+					break;
 				
 			}
 		
