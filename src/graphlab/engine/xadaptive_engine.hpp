@@ -1785,7 +1785,7 @@ namespace graphlab {
 						  //set prepare to stop
 						//  stop_async = true;
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
-						  		<<avg_inc_rate<<", actn/durtime "<<actn/durtime<<std::endl;
+						  		<<avg_inc_rate<<", actn "<<actn<<std::endl;
 						//  countoverhead = globaltimer.current_time_millis();
 						  // put everyone in switch mode
 						//  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
