@@ -1785,9 +1785,9 @@ namespace graphlab {
 					  if(running_mode==X_ADAPTIVE){
 					  //if((avg_inc_rate>0)&&(actn/durtime>1)&&(throughput>thro_A))
 					  {
-					  	  first_time_start = false;
+					  	 // first_time_start = false;
 						  //set prepare to stop
-						  stop_async = true;
+						 // stop_async = true;
 						  if(rmi.procid()==0)
 						  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 						  		<<avg_inc_rate
@@ -1795,10 +1795,10 @@ namespace graphlab {
 								<<" ,actn/durtime "<<actn/durtime
 								<<" ,thro "<<throughput
 								<<std::endl;
-						  countoverhead = globaltimer.current_time_millis();
+						//  countoverhead = globaltimer.current_time_millis();
 						  // put everyone in switch mode
-						  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
-						 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
+						//  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
+						 //		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 					  } 
 					  }
 				  }
