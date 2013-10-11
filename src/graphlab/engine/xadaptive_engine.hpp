@@ -1766,7 +1766,7 @@ namespace graphlab {
 					  active[now] = tmpact-tmpexec;
 					  {
 						  avg_line[now] = avg_line[(iteration_counter-1)%11]-(active[(iteration_counter-A_Sampled_Iters+11)%11]-active[now])/A_Sampled_Iters;
-						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter-1)%11])/avg_line[(iteration_counter-1)%11];
+						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter+6)%11])/avg_line[(iteration_counter+6)%11];
 					  }
 					  lastsampled = globaltimer.current_time_millis();
 					  ++iteration_counter;
@@ -1777,6 +1777,7 @@ namespace graphlab {
 						  		<<avg_inc_rate
 								<<" ,actn "<<active[now]
 								<<" ,thro_A "<<thro_A
+								<<" ,thro_A*durtime/rate_AvsS "<<thro_A*durtime/rate_AvsS
 								<<std::endl;
 					  if((avg_inc_rate>0)&&(active[now]>(thro_A*durtime/rate_AvsS)))
 					  {
