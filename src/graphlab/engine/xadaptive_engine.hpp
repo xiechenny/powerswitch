@@ -1757,7 +1757,7 @@ namespace graphlab {
 				  double avg_inc_rate = 0;
 				  size_t actn = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
-				  if(durtime>4000){
+				  if(durtime>2000){
 					  size_t tmp = xmessages.num_act();
 					  actn = tmp;// - lastact;
 					  lastact = tmp;
@@ -1780,7 +1780,7 @@ namespace graphlab {
 					  ++iteration_counter;
 
 					  if(running_mode==X_ADAPTIVE){
-					  if((avg_inc_rate>0)&&(actn/durtime>))
+					  if((avg_inc_rate>0)&&(actn/durtime>6))
 					  {
 					  	//  first_time_start = false;
 						//set prepare to stop
