@@ -1690,6 +1690,7 @@ namespace graphlab {
 		    double lastsampled = xstart;
 			double lastexecuted = 0;
 			size_t lastadd = 0;
+			size_t count = 0;
 			
 			while(1) {
 			  if(stop_async)  break;
@@ -1784,6 +1785,8 @@ namespace graphlab {
 											
 						  if((avg_inc_rate>0)&&(lastadd>(tmpexec-lastexecuted)))
 						  {
+						  	  count++;
+							  if(count>1){
 						  	  first_time_start = false;
 							  //set prepare to stop
 							  stop_async = true;
@@ -1797,7 +1800,11 @@ namespace graphlab {
 							  // put everyone in switch mode
 							  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 							 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
-						  } 
+
+							  }
+						  }
+						  else count = 0;
+						  
 						  lastexecuted = tmpexec;
 						  lastadd = active[now];
 					  }
