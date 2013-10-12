@@ -1782,7 +1782,7 @@ namespace graphlab {
 									<<" executed "<<tmpexec-lastexecuted
 									<<std::endl;
 							lastexecuted = tmpexec;
-							lastadd = ascive[now];		
+							lastadd = active[now];		
 									
 						  /*if((avg_inc_rate>0)&&(active[now]>comparable))
 						  {
