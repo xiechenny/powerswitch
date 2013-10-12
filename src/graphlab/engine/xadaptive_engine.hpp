@@ -1689,7 +1689,7 @@ namespace graphlab {
 			double xstart = globaltimer.current_time_millis();	   
 		    double lastsampled = xstart;
 			double lastexecuted = 0;
-			size_t lastadd = 9999999;
+			size_t lastadd = 0;
 			
 			while(1) {
 			  if(stop_async)  break;
