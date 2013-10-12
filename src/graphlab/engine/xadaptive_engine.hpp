@@ -1782,8 +1782,8 @@ namespace graphlab {
 						  			<<" lastadd "<<lastadd
 									<<" executed "<<tmpexec-lastexecuted
 									<<std::endl;
-											
-						  if((avg_inc_rate>0)&&(lastadd>(tmpexec-lastexecuted)))
+						  					
+						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
 						  {
 						  	  count++;
 							  if(count>1){
