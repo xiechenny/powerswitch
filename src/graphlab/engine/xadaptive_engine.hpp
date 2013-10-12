@@ -1782,7 +1782,7 @@ namespace graphlab {
 									<<" executed "<<tmpexec-lastexecuted
 									<<std::endl;
 											
-						  if((avg_inc_rate>0)&&(lastadd>(tmpexec-lastexecuted))
+						  if((avg_inc_rate>0)&&(lastadd>(tmpexec-lastexecuted)))
 						  {
 						  	  first_time_start = false;
 							  //set prepare to stop
