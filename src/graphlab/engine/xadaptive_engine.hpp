@@ -2922,6 +2922,7 @@ namespace graphlab {
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ": thro "<< thros
 							<<" ,time "<<(now-lasttime)
+							<<" ,nowtime "<<globaltimer.current_time_millis()
 							<<std::endl;
 					total_act=total_active_vertices;
 					lasttime = globaltimer.current_time_millis();
