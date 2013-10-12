@@ -1756,7 +1756,7 @@ namespace graphlab {
 				else {
 				  double avg_inc_rate = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
-				  if(durtime>1000){
+				  if(durtime>2000){
 					  size_t tmpact = xmessages.num_act();
 					  size_t tmpexec = programs_executed.value;
 	
@@ -1772,7 +1772,7 @@ namespace graphlab {
 
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
-						  if(rmi.procid()==0)
+						  //if(rmi.procid()==0)
 							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
 									//<<" ,actn "<<active[now]
