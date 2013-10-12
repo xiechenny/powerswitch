@@ -1777,7 +1777,7 @@ namespace graphlab {
 									<<" ,actn "<<active[now]
 									<<" ,tmpact "<<tmpact
 									<<" ,thro_A*durtime/rate_AvsS "<<comparable
-									<<std::endl;
+									<<std::endl
 						  			<<" lastadd "<<lastadd
 									<<" executed "<<tmpexec-lastexecuted
 									<<std::endl;
