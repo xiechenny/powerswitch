@@ -786,7 +786,7 @@ namespace graphlab {
 			  } 
 			  //mode setting 
 			  else if(opt == "sample"){
-				  bool smode; 
+				  bool smode = false; 
 				  opts.get_engine_args().get_option("sample", smode);
 				  if(smode){
 					  running_mode = X_SAMPLE;
@@ -796,7 +796,7 @@ namespace graphlab {
 				  }
 			  }
 			  else if(opt == "auto"){
-				  bool amode; 
+				  bool amode = false; 
 				  opts.get_engine_args().get_option("auto", amode);
 				  if(amode){
 					running_mode = X_ADAPTIVE;
@@ -805,7 +805,7 @@ namespace graphlab {
 				  }
 			  }
 			  else if(opt == "manual"){
-				  bool rmode; 
+				  bool rmode = false; 
 				  opts.get_engine_args().get_option("manual", rmode);
 				  if(rmode){
 					running_mode = X_MANUAL;
@@ -1774,17 +1774,15 @@ namespace graphlab {
 						  if(rmi.procid()==0)
 							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
-									<<" ,actn "<<active[now]
-									<<" ,tmpact "<<tmpact
-									<<" ,thro_A*durtime/rate_AvsS "<<comparable
-									<<std::endl
+									//<<" ,actn "<<active[now]
+									//<<" ,tmpact "<<tmpact
+									//<<" ,thro_A*durtime/rate_AvsS "<<comparable
+									//<<std::endl
 						  			<<" lastadd "<<lastadd
 									<<" executed "<<tmpexec-lastexecuted
 									<<std::endl;
-							lastexecuted = tmpexec;
-							lastadd = active[now];		
-									
-						  /*if((avg_inc_rate>0)&&(active[now]>comparable))
+											
+						  if((avg_inc_rate>0)&&(lastadd>(tmpexec-lastexecuted))
 						  {
 						  	  first_time_start = false;
 							  //set prepare to stop
@@ -1792,14 +1790,16 @@ namespace graphlab {
 							  //if(rmi.procid()==0)
 							  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
-									<<" ,actn "<<active[now]
-									<<" ,comparable "<<comparable
+									<<" ,lastadd "<<lastadd
+									<<" ,executed "<<tmpexec-lastexecuted
 									<<std::endl;
 							  countoverhead = globaltimer.current_time_millis();
 							  // put everyone in switch mode
 							  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 							 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
-						  } */
+						  } 
+						  lastexecuted = tmpexec;
+						  lastadd = active[now];
 					  }
 					  
 					  lastsampled = globaltimer.current_time_millis();
