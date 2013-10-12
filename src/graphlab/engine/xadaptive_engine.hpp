@@ -1783,7 +1783,7 @@ namespace graphlab {
 									<<" executed "<<tmpexec-lastexecuted
 									<<std::endl;
 						  					
-						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
+						  /*if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
 						  {
 						  	  count++;
 							  if(count>1){
@@ -1803,7 +1803,7 @@ namespace graphlab {
 
 							  }
 						  }
-						  else count = 0;
+						  else count = 0;*/
 						  
 						  lastexecuted = tmpexec;
 						  lastadd = active[now];
