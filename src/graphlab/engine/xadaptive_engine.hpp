@@ -592,6 +592,7 @@ namespace graphlab {
 		  float  X_A_Join_Rate;
 		  size_t X_A_Delay_Counter;
 		  size_t X_A_Delay;
+		  size_t T_SAMPLE;
 		  
 		  size_t d_join;
 		  size_t d_add;
@@ -855,6 +856,11 @@ namespace graphlab {
 					  logstream(LOG_EMPH) << "Engine Option: set SYNC sampled_iters threshold "<< X_S_Sampled_Iters << std::endl;
 				  }
 			  //========= ASYNC setting
+			  else if(opt=="t_sample"){
+			  	  opts.get_engine_args().get_option("t_sample", T_SAMPLE);
+				  if(rmi.procid() == 0)
+					logstream(LOG_EMPH) << "Engine Option: t_sample "<<T_SAMPLE<< std::endl;
+			  }
 			  else if(opt == "start_async") {
 				  bool start_a;
 				  opts.get_engine_args().get_option("start_async", start_a);
@@ -1746,9 +1752,9 @@ namespace graphlab {
 					if(programs_executed.value>tasknum)
 					{
 						throughput = (programs_executed.value-lastexecuted)/(nowtime-lastsampled);
-						//stop_async = true;
+						stop_async = true;
 						if(rmi.procid()==0)
-						  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<< throughput<<std::endl;
+						  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<<throughput<<std::endl;
 						lastexecuted = programs_executed.value;
 						lastsampled = globaltimer.current_time_millis();
 					}
@@ -1756,7 +1762,7 @@ namespace graphlab {
 				else {
 				  double avg_inc_rate = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
-				  if(durtime>2000){
+				  if(durtime>T_SAMPLE){
 					  size_t tmpact = xmessages.num_act();
 					  size_t tmpexec = programs_executed.value;
 	
@@ -1773,7 +1779,7 @@ namespace graphlab {
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
 						  //if(rmi.procid()==0)
-							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+							/*  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
 									//<<" ,actn "<<active[now]
 									//<<" ,tmpact "<<tmpact
@@ -1782,9 +1788,9 @@ namespace graphlab {
 						  			<<" lastadd "<<lastadd
 						  			<<" now "<<active[now]
 									<<" executed "<<tmpexec-lastexecuted
-									<<std::endl;
+									<<std::endl;*/
 						  					
-						  /*if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
+						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
 						  {
 						  	  count++;
 							  if(count>1){
@@ -1804,7 +1810,7 @@ namespace graphlab {
 
 							  }
 						  }
-						  else count = 0;*/
+						  else count = 0;
 						  
 						  lastexecuted = tmpexec;
 						  lastadd = active[now];
@@ -2407,6 +2413,7 @@ namespace graphlab {
 	X_A_Delay_Counter = 20;
 	X_A_Delay = 200;
 	A_Sampled_Iters = 5;
+	T_SAMPLE = 1000;
 
 	//xie insert : set sync & async opts
 	xset_options(opts);
@@ -2910,7 +2917,7 @@ namespace graphlab {
 
 			if(running_mode==X_SAMPLE){
 				double now = globaltimer.current_time_millis();
-				if(now-lasttime>4000){
+				if(now-lasttime>2000){
 					double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ": thro "<< thros
