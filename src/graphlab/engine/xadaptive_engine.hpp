@@ -2915,7 +2915,8 @@ namespace graphlab {
 			lastactive = total_active_vertices;
 			timelast = globaltimer.current_time_millis();
 
-			if(running_mode==X_SAMPLE){
+			//if(running_mode==X_SAMPLE)
+			{
 				double now = globaltimer.current_time_millis();
 				if(now-lasttime>2000){
 					double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
@@ -2928,7 +2929,8 @@ namespace graphlab {
 					lasttime = globaltimer.current_time_millis();
 				}
 			}
-			else if(running_mode==X_MANUAL){
+			//else 
+			if(running_mode==X_MANUAL){
 				if(iteration_counter>=switch_iter){
 					if (rmi.procid() == 0)
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
@@ -2953,7 +2955,7 @@ namespace graphlab {
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 						<<" ,nor_s_thro "<<thro_now
 						<<" ,thro_A "<<thro_A
-						<<" ,act "<<total_active_vertices
+						<<" ,act "<<total_active_vertices	
 						<<" ,avg_inc "<<avg_inc_rate
 						<<std::endl;
 					
