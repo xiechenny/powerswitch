@@ -1689,8 +1689,8 @@ namespace graphlab {
 			double xstart = globaltimer.current_time_millis();	   
 		    double lastsampled = xstart;
 			double lastexecuted = 0;
-			double preexecuted = 0;
-	
+			size_t lastadd = 9999999;
+			
 			while(1) {
 			  if(stop_async)  break;
 			  
@@ -1755,7 +1755,7 @@ namespace graphlab {
 				else {
 				  double avg_inc_rate = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
-				  if(durtime>500){
+				  if(durtime>1000){
 					  size_t tmpact = xmessages.num_act();
 					  size_t tmpexec = programs_executed.value;
 	
@@ -1771,15 +1771,20 @@ namespace graphlab {
 
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
-						  /*if(rmi.procid()==0)
+						  if(rmi.procid()==0)
 							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
 									<<" ,actn "<<active[now]
 									<<" ,tmpact "<<tmpact
 									<<" ,thro_A*durtime/rate_AvsS "<<comparable
 									<<std::endl;
-									*/
-						  if((avg_inc_rate>0)&&(active[now]>comparable))
+						  			<<" lastadd "<<lastadd
+									<<" executed "<<tmpexec-lastexecuted
+									<<std::endl;
+							lastexecuted = tmpexec;
+							lastadd = ascive[now];		
+									
+						  /*if((avg_inc_rate>0)&&(active[now]>comparable))
 						  {
 						  	  first_time_start = false;
 							  //set prepare to stop
@@ -1794,7 +1799,7 @@ namespace graphlab {
 							  // put everyone in switch mode
 							  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 							 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
-						  } 
+						  } */
 					  }
 					  
 					  lastsampled = globaltimer.current_time_millis();
