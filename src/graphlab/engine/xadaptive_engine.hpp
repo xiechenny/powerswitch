@@ -1743,7 +1743,7 @@ namespace graphlab {
 			  if(threadid%3001==0){
 			  	if(running_mode==X_SAMPLE){
 				  	double nowtime = globaltimer.current_time_millis();
-					if(nowtime-lastsampled>2000)//(programs_executed.value>tasknum)
+					if(programs_executed.value>tasknum)
 					{
 						throughput = (programs_executed.value-lastexecuted)/(nowtime-lastsampled);
 						//stop_async = true;
