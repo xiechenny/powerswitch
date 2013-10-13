@@ -2758,8 +2758,11 @@ namespace graphlab {
 	  double timelast = globaltimer.current_time_millis();
 	  size_t lastactive = 0;
 	  double tmpconst = -1;
+	  double tmpk = 0;
 	  double last_thro = 0;
 	  double lasttime=timelast;
+	  double tcompute = 0;
+	  double c = 0;
 	  
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
@@ -2894,12 +2897,29 @@ namespace graphlab {
 				
 			double this_iter_time = globaltimer.current_time_millis()-timelast;
 			double thro = lastactive/this_iter_time/rmi.numprocs();
-			if(tmpconst<0)
-				tmpconst = thro/lastactive*1.5;
-			else tmpconst = (tmpconst+ thro/lastactive)/2;
+			if(tmpconst<0){
+				tmpconst = lastactive/thro;
+				tmpk = lastactive/ncpus;	
+				thro_now = thro*/lastactive*total_active_vertices*rate_AvsS;
+			}
+			else {
+				double tcompute1 = (tmpconst-lastactive/thro)/(tmpk-lastactive/ncpus);
+				double c1 = tmpconst-tmpk*tcompute;
+				tmpconst = (tmpconst+ thro/lastactive)/2;
+				thro_now = tmpconst*total_active_vertices*rate_AvsS;
+				if(tcompute<0){
+					tcompute = tcompute1;
+					c = c1;
+				}
+				else {
+					tcompute = (tcompute+tcompute1)/2;
+					c = (c+c1)/2;
+				}
+				thro_now = total_active_vertices/(total_active_vertices/ncpus*tcompute+c);
+			}
+			
 			last_thro = thro;
 			total_act+=total_active_vertices;
-			thro_now = tmpconst*total_active_vertices*rate_AvsS;
 
 			//double nowt = globaltimer.current_time_millis();
 			//if(nowt-lasttime>1000){
