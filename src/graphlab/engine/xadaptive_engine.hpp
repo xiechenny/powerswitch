@@ -2900,7 +2900,7 @@ namespace graphlab {
 			if(tmpconst<0){
 				tmpconst = lastactive/thro;
 				tmpk = lastactive/ncpus;	
-				thro_now = thro*/lastactive*total_active_vertices*rate_AvsS;
+				thro_now = thro/lastactive*total_active_vertices*rate_AvsS;
 			}
 			else {
 				double tcompute1 = (tmpconst-lastactive/thro)/(tmpk-lastactive/ncpus);
