@@ -1780,11 +1780,7 @@ namespace graphlab {
 						  double comparable = thro_A*durtime/rate_AvsS;
 						  if(rmi.procid()==0)
 							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-							  		<<avg_inc_rate
-						  			<<" lastadd "<<lastadd
-						  			<<" now "<<active[now]
-						  			<<" now_avg "<<avg_line[now]
-									<<" executed_thro "<<(tmpexec-lastexecuted)/durtime
+									<<" thro "<<(tmpexec-lastexecuted)/durtime
 									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 						  					
@@ -2906,10 +2902,10 @@ namespace graphlab {
 			double now = globaltimer.current_time_millis();
 			if(now-lasttime>1000){
 				if (rmi.procid() == 0 )
-					logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
-					<<" , thro "<<thro
-					<<" ,nowtime "<<globaltimer.current_time_millis()/1000
-					<<std::endl;
+					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+									<<" thro "<<thro
+									<<" time_at "<<globaltimer.current_time_millis()/1000
+									<<std::endl;
 				lasttime = globaltimer.current_time_millis();
 			}
 				
