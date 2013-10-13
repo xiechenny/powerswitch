@@ -1785,7 +1785,7 @@ namespace graphlab {
 						  			<<" now "<<active[now]
 						  			<<" now_avg "<<avg_line[now]
 									<<" executed_thro "<<(tmpexec-lastexecuted)/durtime
-									<<" time_at "<<globaltimer.current_time_millis()
+									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 						  					
 						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
@@ -2908,7 +2908,7 @@ namespace graphlab {
 				if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 					<<" , thro "<<thro
-					<<" ,nowtime "<<globaltimer.current_time_millis()
+					<<" ,nowtime "<<globaltimer.current_time_millis()/1000
 					<<std::endl;
 				lasttime = globaltimer.current_time_millis();
 			}
