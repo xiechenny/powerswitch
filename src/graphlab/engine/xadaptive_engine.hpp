@@ -2899,19 +2899,19 @@ namespace graphlab {
 			total_act+=total_active_vertices;
 			thro_now = tmpconst*total_active_vertices*rate_AvsS;
 
-			double nowt = globaltimer.current_time_millis();
-			if(nowt-lasttime>1000){
-				double thros = (total_act-total_active_vertices)/(nowt-lasttime)/rmi.numprocs();
+			//double nowt = globaltimer.current_time_millis();
+			//if(nowt-lasttime>1000){
+				//double thros = (total_act-total_active_vertices)/(nowt-lasttime)/rmi.numprocs();
 				if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-									<<" thro "<<thros
-									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<" last_thro "<<last_thro
+									<<" time_at "<<globaltimer.current_time_millis()/1000
+									//<<" last_thro "<<last_thro
 									<<" thro_next "<<thro_now
 									<<std::endl;
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
-			}
+			//}
 				
 			lastactive = total_active_vertices;
 			timelast = globaltimer.current_time_millis();
