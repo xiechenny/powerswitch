@@ -2958,8 +2958,9 @@ namespace graphlab {
 						<<" ,thro_A "<<thro_A
 						<<" ,act "<<total_active_vertices	
 						<<" ,avg_inc "<<avg_inc_rate
-						<<std::endl;
-					
+						<<std::endl;					
+					countoverhead = globaltimer.current_time_millis();
+
 					if(iteration_counter==0)
 						next_mode_active_vertex = asy_start_active_v;
 					else
