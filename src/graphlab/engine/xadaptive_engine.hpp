@@ -2907,7 +2907,7 @@ namespace graphlab {
 									<<" last_thro "<<last_thro
 									<<" time_at "<<globaltimer.current_time_millis()/1000
 									//<<" last_thro "<<last_thro
-									<<" thro_next "<<thro_now
+									<<" active "<<lastactive
 									<<std::endl;
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
