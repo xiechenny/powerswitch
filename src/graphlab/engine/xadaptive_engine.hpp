@@ -2905,18 +2905,18 @@ namespace graphlab {
 			last_thro = thro;
 			total_act+=total_active_vertices;
 			thro_now = tmpconst*total_active_vertices*rate_AvsS;
-			/*if (rmi.procid() == 0 )
+			if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 				<<" , thro "<<thro
 				<<" , act "<<lastactive
 				<<" , time "<<this_iter_time
 				<<" , t_now "<<thro_now
 				<<" , const "<<tmpconst
-				<<std::endl;*/
+				<<std::endl;
 			lastactive = total_active_vertices;
 			timelast = globaltimer.current_time_millis();
 
-			//if(running_mode==X_SAMPLE)
+			if(running_mode==X_SAMPLE)
 			{
 				double now = globaltimer.current_time_millis();
 				if(now-lasttime>2000){
