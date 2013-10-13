@@ -2901,11 +2901,13 @@ namespace graphlab {
 
 			double nowt = globaltimer.current_time_millis();
 			if(nowt-lasttime>1000){
+				double thros = (total_act-total_active_vertices)/(nowt-lasttime)/rmi.numprocs();
 				if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-									<<" thro "<<thro
+									<<" thro "<<thros
 									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
+				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
 			}
 				
