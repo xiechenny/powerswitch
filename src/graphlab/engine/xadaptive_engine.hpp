@@ -2906,6 +2906,8 @@ namespace graphlab {
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									<<" thro "<<thros
 									<<" time_at "<<globaltimer.current_time_millis()/1000
+									<<" last_thro "<<last_thro
+									<<" thro_next "<<thro_now
 									<<std::endl;
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
