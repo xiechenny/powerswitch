@@ -1961,7 +1961,9 @@ namespace graphlab {
 			  }
 			  else{
 				  //if(rmi.procid()==0)
-				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async <<std::endl;
+				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async
+				  <<" added "<<xmessages.num_act()
+				  <<std::endl;
 				  
 				  //messages should be sent into next mode then clear
 				  next_mode_active_vertex = xmessages.active_v;
