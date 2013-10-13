@@ -1767,7 +1767,7 @@ namespace graphlab {
 					  size_t tmpexec = programs_executed.value;
 	
 					  size_t now = iteration_counter%11; 
-					  if(tmpact>tmpexec)
+					  if(tmpact>=tmpexec)
 					  	active[now] = tmpact-tmpexec;
 					  else active[now]=0;
 					  
@@ -1778,8 +1778,8 @@ namespace graphlab {
 
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
-						  //if(rmi.procid()==0)
-							/*  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+						  if(rmi.procid()==0)
+							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
 									//<<" ,actn "<<active[now]
 									//<<" ,tmpact "<<tmpact
@@ -1787,8 +1787,9 @@ namespace graphlab {
 									//<<std::endl
 						  			<<" lastadd "<<lastadd
 						  			<<" now "<<active[now]
+						  			<<" now_avg "<<avg_line[now]
 									<<" executed "<<tmpexec-lastexecuted
-									<<std::endl;*/
+									<<std::endl;
 						  					
 						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
 						  {
