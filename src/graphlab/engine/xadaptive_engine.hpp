@@ -1781,14 +1781,11 @@ namespace graphlab {
 						  if(rmi.procid()==0)
 							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
-									//<<" ,actn "<<active[now]
-									//<<" ,tmpact "<<tmpact
-									//<<" ,thro_A*durtime/rate_AvsS "<<comparable
-									//<<std::endl
 						  			<<" lastadd "<<lastadd
 						  			<<" now "<<active[now]
 						  			<<" now_avg "<<avg_line[now]
-									<<" executed "<<tmpexec-lastexecuted
+									<<" executed_thro "<<(tmpexec-lastexecuted)/durtime
+									<<" time_at "<<globaltimer.current_time_millis()
 									<<std::endl;
 						  					
 						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
@@ -2912,6 +2909,7 @@ namespace graphlab {
 				<<" , time "<<this_iter_time
 				<<" , t_now "<<thro_now
 				<<" , const "<<tmpconst
+				<<" ,nowtime "<<globaltimer.current_time_millis()
 				<<std::endl;
 			lastactive = total_active_vertices;
 			timelast = globaltimer.current_time_millis();
@@ -2930,8 +2928,7 @@ namespace graphlab {
 					lasttime = globaltimer.current_time_millis();
 				}
 			}
-			//else 
-			if(running_mode==X_MANUAL){
+			else if(running_mode==X_MANUAL){
 				if(iteration_counter>=switch_iter){
 					if (rmi.procid() == 0)
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
