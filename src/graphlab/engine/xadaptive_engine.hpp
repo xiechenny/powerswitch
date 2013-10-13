@@ -2895,7 +2895,7 @@ namespace graphlab {
 			double this_iter_time = globaltimer.current_time_millis()-timelast;
 			double thro = lastactive/this_iter_time/rmi.numprocs();
 			if(tmpconst<0)
-				tmpconst = thro/lastactive*3;
+				tmpconst = thro/lastactive;
 			else tmpconst = (tmpconst+ thro/lastactive)/2;
 			last_thro = thro;
 			total_act+=total_active_vertices;
