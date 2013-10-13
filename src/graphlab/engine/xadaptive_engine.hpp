@@ -2899,8 +2899,8 @@ namespace graphlab {
 			total_act+=total_active_vertices;
 			thro_now = tmpconst*total_active_vertices*rate_AvsS;
 
-			double now = globaltimer.current_time_millis();
-			if(now-lasttime>1000){
+			double nowt = globaltimer.current_time_millis();
+			if(nowt-lasttime>1000){
 				if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									<<" thro "<<thro
