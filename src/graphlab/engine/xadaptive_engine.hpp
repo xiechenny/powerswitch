@@ -2929,7 +2929,6 @@ namespace graphlab {
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									<<" last_thro "<<last_thro
 									<<" time_at "<<globaltimer.current_time_millis()/1000
-									//<<" last_thro "<<last_thro
 									<<" predict "<<(thro_now/rate_AvsS)
 									<<std::endl;
 				total_act=total_active_vertices;
