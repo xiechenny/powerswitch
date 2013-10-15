@@ -2891,7 +2891,7 @@ namespace graphlab {
 				}
 				
 				if(k>0)
-					thro_now = total_active_vertices/rmi.numprocs()/(k/(iteration_counter-1)*total_active_vertices+c/(iteration_counter-1));
+					thro_now = total_active_vertices/rmi.numprocs()/(k*total_active_vertices+c);
 				else thro_now = thro;
 				
 				if (rmi.procid() == 0 )
