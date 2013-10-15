@@ -182,7 +182,7 @@ size_t validate_conflict(graph_type::edge_type& edge) {
 
 int main(int argc, char** argv) {
 
-  //global_logger().set_log_level(LOG_INFO);
+  global_logger().set_log_level(LOG_INFO);
 
   // Initialize control plane using mpi
   graphlab::mpi_tools::init(argc, argv);
