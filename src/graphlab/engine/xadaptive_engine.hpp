@@ -2758,6 +2758,7 @@ namespace graphlab {
 
 	  double timelast = globaltimer.current_time_millis();
 	  size_t lastactive = 0;
+	  size_t prelastactive = 0;
 	  double last_iter_time = 0;
 	  double lasttime=timelast;
 	  double k = 0;
@@ -2875,8 +2876,8 @@ namespace graphlab {
 				double tmpk = -1;
 				double tmpc = -1;
 				
-				if(lastactive!=total_active_vertices){
-					tmpk = (last_iter_time-this_iter_time)/(lastactive-total_active_vertices);
+				if(lastactive!=prelastactive){
+					tmpk = (last_iter_time-this_iter_time)/(prelastactive-lastactive);
 					tmpc = last_iter_time-k*lastactive;
 				}
 				
@@ -2912,12 +2913,11 @@ namespace graphlab {
 			}
 			last_iter_time = this_iter_time;
 			total_act+=total_active_vertices;
-
 			//double nowt = globaltimer.current_time_millis();
 			//if(nowt-lasttime>1000){
 				//double thros = (total_act-total_active_vertices)/(nowt-lasttime)/rmi.numprocs();
 			//}
-				
+			prelastactive = lastactive;	
 			lastactive = total_active_vertices;
 			timelast = globaltimer.current_time_millis();
 
