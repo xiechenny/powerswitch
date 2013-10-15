@@ -2872,8 +2872,14 @@ namespace graphlab {
 				thro_now = thro;
 			}
 			else {
-				double tmpk = (last_iter_time-this_iter_time)/(lastactive-total_active_vertices);
-				double tmpc = last_iter_time-k*lastactive;
+				double tmpk = -1;
+				double tmpc = -1;
+				
+				if(lastactive!=total_active_vertices){
+					tmpk = (last_iter_time-this_iter_time)/(lastactive-total_active_vertices);
+					tmpc = last_iter_time-k*lastactive;
+				}
+				
 				if(tmpk>0){
 					k = k*(iteration_counter-2)+tmpk/(iteration_counter-1);
 					c = c*(iteration_counter-2)+tmpc/(iteration_counter-1);
@@ -2883,7 +2889,10 @@ namespace graphlab {
 					c = c*(iteration_counter-2)+c/(iteration_counter-1);
 				}
 				
-				thro_now = total_active_vertices/(k/(iteration_counter-1)*total_active_vertices+c/(iteration_counter-1));
+				if(k>0)
+					thro_now = total_active_vertices/(k/(iteration_counter-1)*total_active_vertices+c/(iteration_counter-1));
+				else thro_now = thro;
+				
 				if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									<<" last_iter_time "<<last_iter_time
