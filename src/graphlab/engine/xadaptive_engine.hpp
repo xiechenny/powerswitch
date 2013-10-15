@@ -1778,9 +1778,10 @@ namespace graphlab {
 
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
-						  if(rmi.procid()==0)
-							  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+						  //if(rmi.procid()==0)
+						  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									<<" thro "<<(tmpexec-lastexecuted)/durtime
+									<<" active "<<active[now]
 									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 						  					
@@ -2958,6 +2959,7 @@ namespace graphlab {
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
 							<<" ,tol_active "<<total_active_vertices//<<" X_S_Increase_Rate "<<X_S_Increase_Rate
 							<<" ,avg_inc "<<avg_inc_rate
+							<<" ,timeat "<<globaltimer.current_time_millis()
 							<<rmi.numprocs()<<std::endl;
 
 					countoverhead = globaltimer.current_time_millis();
