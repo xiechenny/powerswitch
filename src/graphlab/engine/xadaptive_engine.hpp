@@ -2758,12 +2758,10 @@ namespace graphlab {
 
 	  double timelast = globaltimer.current_time_millis();
 	  size_t lastactive = 0;
-	  double tmpconst = -1;
-	  double tmpk = 0;
-	  double last_thro = 0;
+	  double last_iter_time = 0;
 	  double lasttime=timelast;
-	  double tcompute = 0;
-	  double c = 0;
+	  double k = 0;
+	  double c = -1;
 	  
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
@@ -2841,36 +2839,7 @@ namespace graphlab {
 		double time_rend = globaltimer.current_time_millis();
   		//xie insert
   		//================================================================
-		//xie insert: when iteration_counter==max_iterations, get the active vertex set and break;
-		//size_t total_signal_number = each_iteration_signal;
-		//size_t total_msg_number = each_iteration_nmsg;
-		//size_t total_active_mirrors = num_active_mirrors;
-		//rmi.all_reduce(total_signal_number);
-		//rmi.all_reduce(total_msg_number);
-		//rmi.all_reduce(total_active_mirrors);
-		//each_iteration_signal = 0;
-		//each_iteration_nmsg = 0;
 		
-	
-		/*if (rmi.procid() == 0 )
-		{
-			double this_iter_time = globaltimer.current_time_millis()-timelast;
-			logstream(LOG_EMPH)<< rmi.procid() << ":iter " << iteration_counter
-			//<<" , max_iterations "<<max_iterations
-			<<" ,total_iter_msg "<<total_msg_number
-			//<<" , each_iter_sig "<<each_iteration_signal
-			//<<" , total_sig_num "<<total_signal_number
-			//<<" , local_active_vertex "<<local_active_vertices
-			<<" ,total_act_ver "<<total_active_vertices
-			<<" ,total_act_mir "<<total_active_mirrors
-			<<" ,thro_last "<<lastactive/3.0/this_iter_time
-			<<" ,At "<<this_iter_time //<<" ,e: "<<time_rstart-time_estart<<" ,r: "<<time_rend-time_estart
-			<<std::endl;
-			lastactive = total_active_vertices;
-			total_act+=total_active_vertices;
-		}*/
-	    //timelast = globaltimer.current_time_millis();
-
 		
 		// clear counters
 		//each_iteration_signal = 0;
@@ -2898,41 +2867,42 @@ namespace graphlab {
 				
 			double this_iter_time = globaltimer.current_time_millis()-timelast;
 			double thro = lastactive/this_iter_time/rmi.numprocs();
-			if(tmpconst<0){
-				tmpconst = lastactive/thro;
-				tmpk = lastactive/ncpus;	
-				thro_now = thro/lastactive*total_active_vertices*rate_AvsS;
+			if(c<0){
+				c = 0;
+				thro_now = thro;
 			}
 			else {
-				double tcompute1 = (tmpconst-lastactive/thro)/(tmpk-lastactive/ncpus);
-				double c1 = tmpconst-tmpk*tcompute;
-				tmpconst = (tmpconst+ thro/lastactive)/2;
-				thro_now = tmpconst*total_active_vertices*rate_AvsS;
-				if(tcompute<0){
-					tcompute = tcompute1;
-					c = c1;
+				double tmpk = (last_iter_time-this_iter_time)/(lastactive-total_active_vertices);
+				double tmpc = last_iter_time-k*lastactive;
+				if(tmpk>0){
+					k = k*(iteration_counter-2)+tmpk/(iteration_counter-1);
+					c = c*(iteration_counter-2)+tmpc/(iteration_counter-1);
 				}
-				else {
-					tcompute = (tcompute+tcompute1)/2;
-					c = (c+c1)/2;
+				else{
+					k = k*(iteration_counter-2)+k/(iteration_counter-1);
+					c = c*(iteration_counter-2)+c/(iteration_counter-1);
 				}
-				thro_now = total_active_vertices/(total_active_vertices/ncpus*tcompute+c);
+				
+				thro_now = total_active_vertices/(k/(iteration_counter-1)*total_active_vertices+c/(iteration_counter-1));
+				if (rmi.procid() == 0 )
+					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+									<<" tk "<<tmpk
+									<<" tc "<<tmpc
+									<<" k "<<k
+									<<" c "<<c
+									<<" last_thro "<<thro
+									<<" time_at "<<globaltimer.current_time_millis()/1000
+									<<" predict_thro "<<thro_now
+									<<std::endl;
+				total_act=total_active_vertices;
+				lasttime = globaltimer.current_time_millis();
 			}
-			
-			last_thro = thro;
+			last_iter_time = this_iter_time;
 			total_act+=total_active_vertices;
 
 			//double nowt = globaltimer.current_time_millis();
 			//if(nowt-lasttime>1000){
 				//double thros = (total_act-total_active_vertices)/(nowt-lasttime)/rmi.numprocs();
-				if (rmi.procid() == 0 )
-					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-									<<" last_thro "<<last_thro
-									<<" time_at "<<globaltimer.current_time_millis()/1000
-									<<" predict "<<(thro_now/rate_AvsS)
-									<<std::endl;
-				total_act=total_active_vertices;
-				lasttime = globaltimer.current_time_millis();
 			//}
 				
 			lastactive = total_active_vertices;
