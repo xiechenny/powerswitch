@@ -2886,6 +2886,10 @@ namespace graphlab {
 				thro_now = total_active_vertices/(k/(iteration_counter-1)*total_active_vertices+c/(iteration_counter-1));
 				if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+									<<" last_iter_time "<<last_iter_time
+									<<" this_iter_time "<<this_iter_time
+									<<" lastactive "<<lastactive
+									<<" total_active_vertices "<<total_active_vertices
 									<<" tk "<<tmpk
 									<<" tc "<<tmpc
 									<<" k "<<k
