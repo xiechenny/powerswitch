@@ -1776,15 +1776,15 @@ namespace graphlab {
 						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter+6)%11])/avg_line[(iteration_counter+6)%11];
 					  }
 
+					  if(rmi.procid()==0)
+												logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+														  <<" thro "<<(tmpexec-lastexecuted)/durtime
+														  <<" active "<<active[now]
+														  <<" time_at "<<globaltimer.current_time_millis()/1000
+														  <<std::endl;
+
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
-						  if(rmi.procid()==0)
-						  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-									<<" thro "<<(tmpexec-lastexecuted)/durtime
-									<<" active "<<active[now]
-									<<" time_at "<<globaltimer.current_time_millis()/1000
-									<<std::endl;
-						  					
 						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
 						  {
 						  	  count++;
