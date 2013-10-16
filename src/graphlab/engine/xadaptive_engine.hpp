@@ -1778,7 +1778,7 @@ namespace graphlab {
 
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
-						  //if(rmi.procid()==0)
+						  if(rmi.procid()==0)
 						  logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									<<" thro "<<(tmpexec-lastexecuted)/durtime
 									<<" active "<<active[now]
