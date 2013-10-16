@@ -814,6 +814,12 @@ namespace graphlab {
 						logstream(LOG_EMPH) << "Engine Option: set mode X_MANUAL"<< std::endl;
 				  }
 			  }
+			  //xie insert
+			  else if (opt == "endgame") {
+				  opts.get_engine_args().get_option("endgame", endgame_mode);
+			 	  if (rmi.procid() == 0)
+					  logstream(LOG_EMPH) << "Engine Option: endgame= " << endgame_mode << std::endl;
+			  }
 			  //========manual setting
 			  else if(opt == "s_iternum"){
 				  opts.get_engine_args().get_option("s_iternum", switch_iter);
@@ -1895,8 +1901,7 @@ namespace graphlab {
 			rmi.all_reduce(allocatedmem);
 	  
 			engine_start_time = timer::approx_time_seconds();
-			force_stop = false;
-			endgame_mode = true;	  
+			force_stop = false;	  
 			programs_executed = 0;
 			exclusive_executed = 0; 	  //xie insert
 			exclusive_executed_pre = 0;   //xie insert
@@ -1957,7 +1962,7 @@ namespace graphlab {
 			  rmi.cout()<<"================ sampled result ============="<<std::endl
 			  		<<"throughput "<<(local_thro/rmi.numprocs())
 					<<" #e/#n "<<(graph.num_edges()*1.0/graph.num_vertices())
-					<<" r "<<(graph.num_replicas()*1.0/graph.num_vertices())
+					<<" r "<<(graph.num_replicas()*1.0/graph.num_vertices()-1)
 					<<std::endl;
 			  }
 			  else{
@@ -2411,6 +2416,7 @@ namespace graphlab {
 	X_A_Delay = 200;
 	A_Sampled_Iters = 5;
 	T_SAMPLE = 1000;
+	endgame_mode = true;
 
 	//xie insert : set sync & async opts
 	xset_options(opts);
