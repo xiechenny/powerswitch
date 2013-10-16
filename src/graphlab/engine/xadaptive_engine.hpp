@@ -1896,7 +1896,7 @@ namespace graphlab {
 	  
 			engine_start_time = timer::approx_time_seconds();
 			force_stop = false;
-			endgame_mode = true;//false;	  
+			endgame_mode = false;	  
 			programs_executed = 0;
 			exclusive_executed = 0; 	  //xie insert
 			exclusive_executed_pre = 0;   //xie insert
