@@ -2780,6 +2780,7 @@ namespace graphlab {
 		  logstream(LOG_EMPH)
 			<< rmi.procid() << ": Starting iteration: " << iteration_counter
 			<< " lastact "<<lastactive
+			<< " at "<<globaltimer.current_time_millis()
 			<< std::endl;
 		  last_print = elapsed_seconds();
 		}
@@ -2894,7 +2895,7 @@ namespace graphlab {
 					thro_now = total_active_vertices/rmi.numprocs()/(k*total_active_vertices+c);
 				else thro_now = thro;
 				
-				if (rmi.procid() == 0 )
+				/*if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									<<" last_iter_time "<<last_iter_time
 									<<" this_iter_time "<<this_iter_time
@@ -2907,7 +2908,7 @@ namespace graphlab {
 									<<" last_thro "<<thro
 									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<" predict_thro "<<thro_now
-									<<std::endl;
+									<<std::endl;*/
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
 			}
