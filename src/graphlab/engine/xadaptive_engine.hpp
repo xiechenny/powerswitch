@@ -1748,13 +1748,13 @@ namespace graphlab {
 			  //xie insert
 			  if(threadid%3001==0){
 			  	if(running_mode==X_SAMPLE){
-				  	double nowtime = globaltimer.current_time_millis();
-					if(programs_executed.value>tasknum)
+				  	double nowtime = globaltimer.current_time_millis()-lastsampled;
+					if(nowtime>T_SAMPLE)
 					{
-						throughput = (programs_executed.value-lastexecuted)/(nowtime-lastsampled);
+						throughput = (programs_executed.value-lastexecuted)/nowtime;
 						stop_async = true;
-						if(rmi.procid()==0)
-						  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<<throughput<<std::endl;
+						//if(rmi.procid()==0)
+						//  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<<throughput<<std::endl;
 						lastexecuted = programs_executed.value;
 						lastsampled = globaltimer.current_time_millis();
 					}
