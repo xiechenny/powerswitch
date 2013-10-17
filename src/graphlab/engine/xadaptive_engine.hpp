@@ -603,14 +603,21 @@ namespace graphlab {
 		  size_t delay;
 		  float avg_line[11];
 		  float active[11];
-		  size_t startcounter[30];
-		  size_t endcounter[30];
 		  size_t lastcounter;
 		  size_t lastcounters;
 		  timer globaltimer;
 		  double lastime;
 		  double startend;
 		  double countoverhead;
+		  double tm;
+		  double ts;
+		  double tc;
+		  double tall;
+		  size_t tmc;
+		  size_t tsc;
+		  size_t tcc;
+		  size_t tallc;
+		  
 		  
 		  /**
 		   * \brief A bit (for master vertices) indicating if that vertex is active
@@ -1500,6 +1507,8 @@ namespace graphlab {
 		   */
 		  void xeval_sched_task(const lvid_type lvid,
 							   const message_type& msg, size_t threadid) {
+			double allt = globaltimer.current_time_millis();
+			
 			const typename graph_type::vertex_record& rec = graph.l_get_vertex_record(lvid);
 			vertex_id_type vid = rec.gvid;
 			// if this is another machine's forward it
@@ -1529,6 +1538,8 @@ namespace graphlab {
 			  }
 			  cm_handles[lvid]->lock.unlock();
 			}
+
+			double gtimer = globaltimer.current_time_millis();		
 			/**************************************************************************/
 			/*							   Begin Program							  */
 			/**************************************************************************/
@@ -1559,24 +1570,34 @@ namespace graphlab {
 												  vprog));
 				}
 				gather_result += xperform_gather(vid, vprog);
-						
+				if(fiber_control::get_worker_id()==0){
+		   			tm += (globaltimer.current_time_millis()-gtimer);
+					tmc++;
+		   		}
+				
 				for(size_t i = 0;i < gather_futures.size(); ++i) {
 				  gather_result += gather_futures[i]();
 				}
 			}// end skip no_edges
-	  
+		   
+			
 		   /**************************************************************************/
 		   /*							   apply phase								 */
 		   /**************************************************************************/ 
 	  
 		   //xie insert tmp :
 		   //const vertex_data_type predata = local_vertex.data();
+		   double atimer = globaltimer.current_time_millis();	
 		   
 		   vertexlocks[lvid].lock();
 		   vprog.apply(context, vertex, gather_result.value);	   
 		   vertexlocks[lvid].unlock();
-	  
-	  
+		   
+	 	   if(fiber_control::get_worker_id()==0){
+		   	tc += (globaltimer.current_time_millis()-atimer);
+			tcc++;
+		   } 
+	  		
 		   /**************************************************************************/
 		   /*							 scatter phase								 */
 		   /**************************************************************************/
@@ -1608,7 +1629,8 @@ namespace graphlab {
 		   }
 		   // xie insert end 
 		   else */				
-	  
+
+		    double stimer = globaltimer.current_time_millis();	
 		   {
 			   std::vector<request_future<void> > scatter_futures;
 			   foreach(procid_t mirror, local_vertex.mirrors()) {
@@ -1621,6 +1643,11 @@ namespace graphlab {
 												 local_vertex.data()));
 			   }
 			   xperform_scatter_local(lvid, vprog);
+			   if(fiber_control::get_worker_id()==0){
+		   			ts += (globaltimer.current_time_millis()-stimer);
+					tsc++;
+		   		} 
+			   
 			   for(size_t i = 0;i < scatter_futures.size(); ++i) 
 				 scatter_futures[i]();
 		   }
@@ -1637,7 +1664,11 @@ namespace graphlab {
 			}
 			xrelease_exclusive_access_to_vertex(lvid);
 			programs_executed.inc(); 
-	  
+
+	  		if(fiber_control::get_worker_id()==0){
+		   		tall += (globaltimer.current_time_millis()-allt);
+				tallc++;
+		    } 
 			//if(fiber_control::get_worker_id()==0) 
 			{
 				  //if((rmi.procid()==0)&&(endcounter[0]%500==0)/*||(fiber_control::get_worker_id()==21)*/)
@@ -1763,7 +1794,9 @@ namespace graphlab {
 						throughput = (programs_executed.value-lastexecuted)/nowtime;
 						//stop_async = true;
 						if(rmi.procid()==0)
-						  	logstream(LOG_INFO)<< rmi.procid()<< ": -------thro_a--------- "<<throughput<<std::endl;
+						  	logstream(LOG_INFO)<< rmi.procid()
+						  	<< ": -------thro_a--------- "<<throughput
+						  	<<" at "<<globaltimer.current_time_millis()/1000<<std::endl;
 						avgthroughput+=throughput;
 						avgcount++;
 						lastexecuted = programs_executed.value;
@@ -1788,11 +1821,11 @@ namespace graphlab {
 					  }
 
 					  if(rmi.procid()==0)
-												logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-														  <<" thro "<<(tmpexec-lastexecuted)/durtime
-														  <<" active "<<active[now]
-														  <<" time_at "<<globaltimer.current_time_millis()/1000
-														  <<std::endl;
+							logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+								<<" thro "<<(tmpexec-lastexecuted)/durtime
+								<<" active "<<active[now]
+								<<" time_at "<<globaltimer.current_time_millis()/1000
+								<<std::endl;
 
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
@@ -1876,6 +1909,14 @@ namespace graphlab {
 			d_add = 0;
 			d_complete = 0;
 			delay = 0;
+			tm=0;
+		  	ts=0;
+		  	tc=0;
+		  	tmc=0;
+		  	tsc=0;
+		  	tcc=0;
+			tall = 0;
+			tallc = 0;
 			graphlab::timer timer; timer.start();
 	  
 			
@@ -1933,11 +1974,7 @@ namespace graphlab {
 			lastcounters = 0;
 			sample_start = globaltimer.current_time_millis();
 			double xstartime = lastime;
-			
-			for(size_t i = 0; i<30; ++i){
-			  startcounter[i] = 0;
-			  endcounter[i] = 0;
-			  }
+	
 	  
 			//xie insert record overhead
 			if((rmi.procid()==0)&&(!first_time_start))
@@ -1951,14 +1988,7 @@ namespace graphlab {
 			aggregator.stop();
 	  
 			
-			  size_t scounter = 0;
-			  size_t ecounter = 0;
-			for(size_t i=0;i<30; i++){
-				scounter+=startcounter[i];
-				ecounter+=endcounter[i];
-				}				
-
-
+			
 	  		if(running_mode==X_SAMPLE){
 			  	termination_reason = execution_status::TASK_DEPLETION;
 
@@ -1968,6 +1998,19 @@ namespace graphlab {
 			  		<<"throughput "<<(local_thro/rmi.numprocs())
 					<<" #e/#n "<<(graph.num_edges()*1.0/graph.num_vertices())
 					<<" r-1 "<<(graph.num_replicas()*1.0/graph.num_vertices()-1)
+					<<std::endl
+			  		<<" tm "<<tm
+					<<" tc "<<tc
+					<<" ts "<<ts
+					<<std::endl
+					<<" tmc "<<tmc
+					<<" tcc "<<tcc
+					<<" tsc "<<tsc
+					<<std::endl
+			  		<<" tm_avg "<<tm/tmc
+					<<" tc_avg "<<tc/tcc
+					<<" ts_avg "<<ts/tsc
+					<<" tall "<<tall/tallc
 					<<std::endl;
 			}
 			 

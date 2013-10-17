@@ -2127,15 +2127,13 @@ namespace graphlab {
 
 	void load_random_graph(size_t knverts, size_t truncate = (size_t)(-1)) {
 		  rpc.full_barrier();
-		  std::vector<double> prob(std::min(nverts, truncate), 0);
-
 		  size_t nverts = 500000;
-		  size_t nedges = nverts;
-		  size_t total_e = knverts*nverts;
+		  size_t nedges = nverts/rpc.numprocs();
+		  size_t total_e = knverts*nedges;
 		  
 		  srand((unsigned)time(NULL));
 		  
-		  for(size_t i=0; i<nverts;i++){
+		  for(size_t i=rpc.procid(); i<nverts; i+=rpc.numprocs()){
 		  	size_t target = rand()*511%nverts;
 			while(target==i){
 				target = rand()*511%nverts;
@@ -2148,6 +2146,7 @@ namespace graphlab {
 			while(t==s)
 				t = rand()*511%nverts;
 			add_edge(s, t);
+			nedges++;
 		  }
 		  rpc.full_barrier();
 	}

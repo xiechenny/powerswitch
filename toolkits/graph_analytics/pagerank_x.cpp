@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
   }
   if(randomgraph> 0) { // make a synthetic graph
     dc.cout() << "Loading Random graph. #e/#v "<<randomgraph<<"."<< std::endl;
-    graph.load_random_graph(powerlaw, 100000000);
+    graph.load_random_graph(randomgraph, 100000000);
   }
   else if (graph_dir.length() > 0) { // Load the graph from a file
     dc.cout() << "Loading graph in format: "<< format << std::endl;
