@@ -1763,7 +1763,7 @@ namespace graphlab {
 						throughput = (programs_executed.value-lastexecuted)/nowtime;
 						//stop_async = true;
 						if(rmi.procid()==0)
-						  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<<throughput<<std::endl;
+						  	logstream(LOG_INFO)<< rmi.procid()<< ": -------thro_a--------- "<<throughput<<std::endl;
 						avgthroughput+=throughput;
 						avgcount++;
 						lastexecuted = programs_executed.value;
@@ -1957,11 +1957,9 @@ namespace graphlab {
 				scounter+=startcounter[i];
 				ecounter+=endcounter[i];
 				}				
-	  
-			//if need to activate next mode
-			if(stop_async){
-			  rmi.full_barrier();
-			  if(running_mode==X_SAMPLE){
+
+
+	  		if(running_mode==X_SAMPLE){
 			  	termination_reason = execution_status::TASK_DEPLETION;
 
 			  double local_thro = avgthroughput/avgcount;
@@ -1971,8 +1969,13 @@ namespace graphlab {
 					<<" #e/#n "<<(graph.num_edges()*1.0/graph.num_vertices())
 					<<" r-1 "<<(graph.num_replicas()*1.0/graph.num_vertices()-1)
 					<<std::endl;
-			  }
-			  else{
+			}
+			 
+			  	
+			//if need to activate next mode
+			if(stop_async){
+			  rmi.full_barrier();
+			  {
 				  //if(rmi.procid()==0)
 				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async
 				  <<" added "<<xmessages.num_act()
