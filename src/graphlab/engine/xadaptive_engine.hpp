@@ -568,6 +568,9 @@ namespace graphlab {
 		  //sample mode
 		  double sample_start;
 		  double throughput;
+		  double avgthroughput;
+		  size_t avgcount;
+		  
 		  
 		  //manual switch
 		  long tasknum;
@@ -584,7 +587,7 @@ namespace graphlab {
 		  float  X_S_Increase_Rate;   // -1/100000		  if >1 it keeps increase£¬ if >2 it is 2 exponent
 		  size_t X_S_Min_Iters; 	  // 5
 		  size_t X_S_Sampled_Iters;   // 10   10day avg line  pick 5
-		  //float  X_S_Actived_Rate;  //0.01/machine_num
+		 
 	  
 		  // threshold in ASYNC 
 		  float  X_A_Threshold_low;// 0.01
@@ -1759,8 +1762,10 @@ namespace graphlab {
 					{
 						throughput = (programs_executed.value-lastexecuted)/nowtime;
 						//stop_async = true;
-						//if(rmi.procid()==0)
+						if(rmi.procid()==0)
 						  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<<throughput<<std::endl;
+						avgthroughput+=throughput;
+						avgcount++;
 						lastexecuted = programs_executed.value;
 						lastsampled = globaltimer.current_time_millis();
 					}
@@ -1905,6 +1910,8 @@ namespace graphlab {
 			programs_executed = 0;
 			exclusive_executed = 0; 	  //xie insert
 			exclusive_executed_pre = 0;   //xie insert
+			avgthroughput = 0;
+			avgcount = 0;
 			launch_timer.start();
 	  
 			termination_reason = execution_status::RUNNING;
@@ -1957,12 +1964,12 @@ namespace graphlab {
 			  if(running_mode==X_SAMPLE){
 			  	termination_reason = execution_status::TASK_DEPLETION;
 
-			  double local_thro = throughput;
+			  double local_thro = avgthroughput/avgcount;
 			  rmi.all_reduce(local_thro);
 			  rmi.cout()<<"================ sampled result ============="<<std::endl
 			  		<<"throughput "<<(local_thro/rmi.numprocs())
 					<<" #e/#n "<<(graph.num_edges()*1.0/graph.num_vertices())
-					<<" r "<<(graph.num_replicas()*1.0/graph.num_vertices()-1)
+					<<" r-1 "<<(graph.num_replicas()*1.0/graph.num_vertices()-1)
 					<<std::endl;
 			  }
 			  else{
