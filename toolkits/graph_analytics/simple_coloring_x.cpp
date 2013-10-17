@@ -180,6 +180,7 @@ int conflic_edge(graph_coloring::icontext_type& context,
 	}
 
 	void print_finalize(graph_coloring::icontext_type& context, int total) {
+		if(context.procid()==0)
 		std::cout <<" ======== non conflict: ====== "<< total << "\n";
 	}
 	  
