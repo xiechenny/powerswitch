@@ -215,6 +215,10 @@ int main(int argc, char** argv) {
   size_t powerlaw = 0;
   clopts.attach_option("powerlaw", powerlaw,
                        "Generate a synthetic powerlaw out-degree graph. ");
+  size_t randomgraph = 0;
+  clopts.attach_option("random", randomgraph,
+                       "Generate a random graph.");
+  
   clopts.attach_option("iterations", ITERATIONS, 
                        "If set, will force the use of the synchronous engine"
                        "overriding any engine option set by the --engine parameter. "
@@ -257,6 +261,10 @@ int main(int argc, char** argv) {
   if(powerlaw > 0) { // make a synthetic graph
     dc.cout() << "Loading synthetic Powerlaw graph." << std::endl;
     graph.load_synthetic_powerlaw(powerlaw, false, 2.1, 100000000);
+  }
+  if(randomgraph> 0) { // make a synthetic graph
+    dc.cout() << "Loading Random graph. #e/#v "<<randomgraph<<"."<< std::endl;
+    graph.load_random_graph(powerlaw, 100000000);
   }
   else if (graph_dir.length() > 0) { // Load the graph from a file
     dc.cout() << "Loading graph in format: "<< format << std::endl;

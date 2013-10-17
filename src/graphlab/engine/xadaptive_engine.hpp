@@ -1758,9 +1758,9 @@ namespace graphlab {
 					if(nowtime>T_SAMPLE)
 					{
 						throughput = (programs_executed.value-lastexecuted)/nowtime;
-						stop_async = true;
+						//stop_async = true;
 						//if(rmi.procid()==0)
-						//  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<<throughput<<std::endl;
+						  	logstream(LOG_INFO)<< 0 << ": -------thro_a--------- "<<throughput<<std::endl;
 						lastexecuted = programs_executed.value;
 						lastsampled = globaltimer.current_time_millis();
 					}

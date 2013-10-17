@@ -26,6 +26,11 @@
 #ifndef __NO_OPENMP__
 #include <omp.h>
 #endif
+//xie insert
+#include <stdio.h> 
+#include <time.h> 
+
+
 
 #include <cmath>
 
@@ -2120,6 +2125,32 @@ namespace graphlab {
       rpc.full_barrier();
     } // end of load random powerlaw
 
+	void load_random_graph(size_t knverts, size_t truncate = (size_t)(-1)) {
+		  rpc.full_barrier();
+		  std::vector<double> prob(std::min(nverts, truncate), 0);
+
+		  size_t nverts = 500000;
+		  size_t nedges = nverts;
+		  size_t total_e = knverts*nverts;
+		  
+		  srand((unsigned)time(NULL));
+		  
+		  for(size_t i=0; i<nverts;i++){
+		  	size_t target = rand()*511%nverts;
+			while(target==i){
+				target = rand()*511%nverts;
+			}
+			add_edge(i, target);
+		  }
+		  while(nedges<total_e){
+		  	size_t s = rand()*511%nverts;
+			size_t t = rand()*511%nverts;
+			while(t==s)
+				t = rand()*511%nverts;
+			add_edge(s, t);
+		  }
+		  rpc.full_barrier();
+	}
 
     /**
      *  \brief load a graph with a standard format. Must be called on all
