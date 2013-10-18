@@ -35,6 +35,17 @@ typedef graphlab::vertex_id_type color_type;
 typedef graphlab::empty edge_data_type;
 bool EDGE_CONSISTENT = false;
 
+struct v_data{
+   color_type color;
+   size_t checknum;
+   void save(graphlab::oarchive& oarc) const {
+    oarc << color<<checknum;
+  }
+  void load(graphlab::iarchive& iarc) {
+    iarc >> color>>checknum;
+  }
+};
+
 
 /*
  * This is the gathering type which accumulates an (unordered) set of
@@ -74,7 +85,7 @@ struct set_union_gather {
 /*
  * Define the type of the graph
  */
-typedef graphlab::distributed_graph<color_type,
+typedef graphlab::distributed_graph<v_data,
                                     edge_data_type> graph_type;
 
 
@@ -87,7 +98,7 @@ class graph_coloring:
       /* I have no data. Just force it to POD */
       public graphlab::IS_POD_TYPE  {
 public:
-  size_t checknum = 0;
+  
   // Gather on all edges
   edge_dir_type gather_edges(icontext_type& context,
                              const vertex_type& vertex) const {
@@ -103,7 +114,7 @@ public:
                      edge_type& edge) const {
     set_union_gather gather;
     color_type other_color = edge.source().id() == vertex.id() ?
-                                 edge.target().data(): edge.source().data();
+                                 edge.target().data().color: edge.source().data().color;
     // vertex_id_type otherid= edge.source().id() == vertex.id() ?
     //                              edge.target().id(): edge.source().id();
     gather.colors.insert(other_color);
@@ -117,12 +128,12 @@ public:
   void apply(icontext_type& context, vertex_type& vertex,
              const gather_type& neighborhood) {
     // find the smallest color not described in the neighborhood
-    if(checknum==0) checknum++;
+    if(vertex.data().checknum==0) vertex.data().checknum++;
 	else{
 	    size_t neighborhoodsize = neighborhood.colors.size();
 	    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
 	      if (neighborhood.colors.count(curcolor) == 0) {
-	        vertex.data() = curcolor;
+	        vertex.data().color = curcolor;
 	        break;
 	      }
 	    }
@@ -147,7 +158,7 @@ public:
               const vertex_type& vertex,
               edge_type& edge) const {
     // both points have different colors!
-    if (edge.source().data() == edge.target().data()) {
+    if (edge.source().data().color == edge.target().data().color) {
       context.signal(edge.source().id() == vertex.id() ? 
                       edge.target() : edge.source());
     }
@@ -164,7 +175,7 @@ public:
 struct save_colors{
   std::string save_vertex(graph_type::vertex_type v) { 
     return graphlab::tostr(v.id()) + "\t" +
-           graphlab::tostr(v.data()) + "\n";
+           graphlab::tostr(v.data().color) + "\n";
   }
   std::string save_edge(graph_type::edge_type e) {
     return "";
@@ -174,13 +185,13 @@ struct save_colors{
 size_t inited = 0;
 
 //xie insert init
-void init_vertex(graph_type::vertex_type& vertex) { vertex.data() = (rand()%(inited)); }
+void init_vertex(graph_type::vertex_type& vertex) { vertex.data().color = (rand()%(inited)); }
 
 
 uint64_t conflict_edge(graph_coloring::icontext_type& context,
                                 const graph_type::edge_type& edge) {
          int ret=0;
-		 if (edge.source().data() == edge.target().data())
+		 if (edge.source().data().color == edge.target().data().color)
 		 	ret = 1;
          return ret;
 	}
@@ -198,7 +209,7 @@ uint64_t conflict_edge(graph_coloring::icontext_type& context,
 /*                                                                        */
 /**************************************************************************/
 size_t validate_conflict(graph_type::edge_type& edge) {
-  return edge.source().data() == edge.target().data();
+  return edge.source().data().color == edge.target().data().color;
 }
 
 
