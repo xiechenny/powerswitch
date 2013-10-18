@@ -87,7 +87,7 @@ class graph_coloring:
       /* I have no data. Just force it to POD */
       public graphlab::IS_POD_TYPE  {
 public:
-  
+  size_t checknum = 0;
   // Gather on all edges
   edge_dir_type gather_edges(icontext_type& context,
                              const vertex_type& vertex) const {
@@ -117,13 +117,16 @@ public:
   void apply(icontext_type& context, vertex_type& vertex,
              const gather_type& neighborhood) {
     // find the smallest color not described in the neighborhood
-    size_t neighborhoodsize = neighborhood.colors.size();
-    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
-      if (neighborhood.colors.count(curcolor) == 0) {
-        vertex.data() = curcolor;
-        break;
-      }
-    }
+    if(checknum==0) checknum++;
+	else{
+	    size_t neighborhoodsize = neighborhood.colors.size();
+	    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
+	      if (neighborhood.colors.count(curcolor) == 0) {
+	        vertex.data() = curcolor;
+	        break;
+	      }
+	    }
+	}
 	//if(neighborhood.colors.size()>maxcolor) maxcolor = neighborhood.colors.size();
   }
 
