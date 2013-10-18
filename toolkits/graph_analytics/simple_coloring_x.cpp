@@ -87,6 +87,7 @@ class graph_coloring:
       /* I have no data. Just force it to POD */
       public graphlab::IS_POD_TYPE  {
 public:
+  
   // Gather on all edges
   edge_dir_type gather_edges(icontext_type& context,
                              const vertex_type& vertex) const {
@@ -123,6 +124,7 @@ public:
         break;
       }
     }
+	//if(neighborhood.colors.size()>maxcolor) maxcolor = neighborhood.colors.size();
   }
 
 
@@ -166,22 +168,23 @@ struct save_colors{
   }
 };
 
+size_t inited = 0;
 
 //xie insert init
-void init_vertex(graph_type::vertex_type& vertex) { vertex.data() = (rand()%(vertex.num_in_edges()+vertex.num_out_edges()+1)); }
+void init_vertex(graph_type::vertex_type& vertex) { vertex.data() = (rand()%(inited)); }
 
 
-int conflic_edge(graph_coloring::icontext_type& context,
-                                graph_type::edge_type edge) {
+uint64_t conflict_edge(graph_coloring::icontext_type& context,
+                                const graph_type::edge_type& edge) {
          int ret=0;
 		 if (edge.source().data() == edge.target().data())
 		 	ret = 1;
          return ret;
 	}
 
-	void print_finalize(graph_coloring::icontext_type& context, int total) {
+	void print_finalize(graph_coloring::icontext_type& context, uint64_t total) {
 		if(context.procid()==0)
-		std::cout <<" ======== non conflict: ====== "<< total << "\n";
+			logstream(LOG_INFO)<<" ======== non conflict: ====== "<< total << "\n";
 	}
 	  
 
@@ -214,7 +217,7 @@ int main(int argc, char** argv) {
   std::string prefix, format;
   std::string output;  
   std::string exec_type = "asynchronous";
-
+  
   size_t powerlaw = 0;
   clopts.attach_option("graph", prefix,
                        "Graph input. reads all graphs matching prefix*");
@@ -224,6 +227,8 @@ int main(int argc, char** argv) {
                        "The engine type synchronous or asynchronous");
    clopts.attach_option("output", output,
                        "A prefix to save the output.");
+    clopts.attach_option("inited", inited,
+                       "If init with random value.");
    clopts.attach_option("powerlaw", powerlaw,
                        "Generate a synthetic powerlaw out-degree graph. ");
   clopts.attach_option("edgescope", EDGE_CONSISTENT,
@@ -265,7 +270,8 @@ int main(int argc, char** argv) {
   graphlab::timer ti;
 
   //xie insert
-  graph.transform_vertices(init_vertex);
+  if(inited>0)
+  	graph.transform_vertices(init_vertex);
   
   // create engine to count the number of triangles
   dc.cout() << "Coloring..." << std::endl;
@@ -277,13 +283,14 @@ int main(int argc, char** argv) {
 	  } 
   }
   graphlab::omni_engine<graph_coloring> engine(dc, graph, exec_type, clopts);
-  engine.add_edge_aggregator<int>("conflic_edge",conflic_edge,print_finalize);
-  engine.aggregate_periodic("conflic_edge", 10);
+  engine.add_edge_aggregator<int>("conflict_edge",conflict_edge,print_finalize);
+  engine.aggregate_periodic("conflict_edge", 10);
   
   engine.signal_all();
+  engine.aggregate_now("conflict_edge");
   engine.start();
 
-  dc.cout() << "Colored in " << ti.current_time() << " seconds" << std::endl;
+  dc.cout() << "Colored in " << ti.current_time() << " seconds " << std::endl;
 
   size_t conflict_count = graph.map_reduce_edges<size_t>(validate_conflict);
   dc.cout() << "Num conflicts = " << conflict_count << "\n";
