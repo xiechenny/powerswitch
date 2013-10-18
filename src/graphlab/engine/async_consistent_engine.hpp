@@ -1146,7 +1146,7 @@ namespace graphlab {
       float last_aggregator_check = timer::approx_time_seconds();
       timer ti; ti.start();
       while(1) {
-        if (timer::approx_time_seconds() != last_aggregator_check && !endgame_mode) {
+        if (timer::approx_time_seconds() != last_aggregator_check /*&& !endgame_mode*/) {
           last_aggregator_check = timer::approx_time_seconds();
           std::string key = aggregator.tick_asynchronous();
           if (key != "") {

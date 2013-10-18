@@ -168,14 +168,14 @@ struct save_colors{
 
 
 //xie insert init
-void init_vertex(graph_type::vertex_type& vertex) { vertex.data() = (vertex.id()%(vertex.num_in_edges()+vertex.num_out_edges()+1)); }
+void init_vertex(graph_type::vertex_type& vertex) { vertex.data() = (rand()%(vertex.num_in_edges()+vertex.num_out_edges()+1)); }
 
 
 int conflic_edge(graph_coloring::icontext_type& context,
                                 graph_type::edge_type edge) {
-         int ret=1;
+         int ret=0;
 		 if (edge.source().data() == edge.target().data())
-		 	ret = 0;
+		 	ret = 1;
          return ret;
 	}
 
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
   }
   graphlab::omni_engine<graph_coloring> engine(dc, graph, exec_type, clopts);
   engine.add_edge_aggregator<int>("conflic_edge",conflic_edge,print_finalize);
-  engine.aggregate_periodic("conflic_edge", 10);
+  engine.aggregate_periodic("conflic_edge", 1);
   
   engine.signal_all();
   engine.start();
