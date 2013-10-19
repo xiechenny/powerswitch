@@ -128,15 +128,12 @@ public:
   void apply(icontext_type& context, vertex_type& vertex,
              const gather_type& neighborhood) {
     // find the smallest color not described in the neighborhood
-    if(vertex.data().checknum==0) vertex.data().checknum++;
-	else{
 	    size_t neighborhoodsize = neighborhood.colors.size();
 	    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
 	      if (neighborhood.colors.count(curcolor) == 0) {
 	        vertex.data().color = curcolor;
 	        break;
 	      }
-	    }
 	}
 	//if(neighborhood.colors.size()>maxcolor) maxcolor = neighborhood.colors.size();
   }
@@ -243,6 +240,13 @@ int main(int argc, char** argv) {
                        "A prefix to save the output.");
     clopts.attach_option("inited", inited,
                        "If init with random value.");
+	bool aggregated_v = false;
+	clopts.attach_option("aggregated_v", aggregated_v,
+                       "If aggregate vertex value.");
+	bool aggregated_e = false;
+	clopts.attach_option("aggregated_e", aggregated_e,
+                       "If aggregate edge value.");
+	
    clopts.attach_option("powerlaw", powerlaw,
                        "Generate a synthetic powerlaw out-degree graph. ");
   clopts.attach_option("edgescope", EDGE_CONSISTENT,
@@ -298,7 +302,10 @@ int main(int argc, char** argv) {
   }
   graphlab::omni_engine<graph_coloring> engine(dc, graph, exec_type, clopts);
   engine.add_edge_aggregator<int>("conflict_edge",conflict_edge,print_finalize);
-  engine.aggregate_periodic("conflict_edge", 10);
+  if(aggregated_e)
+  	engine.aggregate_periodic("conflict_edge", 10);
+  //else if(aggregated_v)
+  //	engine.aggregate_periodic("stable vertex", 10);
   
   engine.signal_all();
   engine.aggregate_now("conflict_edge");
