@@ -358,6 +358,12 @@ namespace graphlab {
     typedef typename iengine<VertexProgram>::aggregator_type aggregator_type;
     aggregator_type aggregator;
 
+
+	//xie insert
+	timer globaltimer;
+	
+
+	
     /// Number of kernel threads
     size_t ncpus;
     /// Size of each fiber stack
@@ -1145,6 +1151,9 @@ namespace graphlab {
       message_type msg;
       float last_aggregator_check = timer::approx_time_seconds();
       timer ti; ti.start();
+   
+      double lastsampled = globaltimer.current_time_millis();
+			
       while(1) {
         if (timer::approx_time_seconds() != last_aggregator_check /*&& !endgame_mode*/) {
           last_aggregator_check = timer::approx_time_seconds();
@@ -1188,6 +1197,19 @@ namespace graphlab {
           break; 
         }
 
+		//xie insert sample
+		if(threadid%3001==0){
+				  double durtime = globaltimer.current_time_millis()-lastsampled;
+				  if(durtime>10000){
+					  size_t tmpexec = programs_executed.value;
+					  if(rmi.procid()==0)
+							logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ------ "
+								<<" executed "<<tmpexec
+								<<" time_at "<<globaltimer.current_time_millis()/1000
+								<<std::endl;
+				  }
+		}
+		
         if (fiber_control::worker_has_fibers_on_queue()) fiber_control::yield();
       }
     } // end of thread start
@@ -1208,6 +1230,8 @@ namespace graphlab {
       * \return the reason for termination
       */
     execution_status::status_enum start() {
+      globaltimer.start();
+	  
       bool old_fasttrack = rmi.dc().set_fast_track_requests(false);
       if (rmi.procid() == 0)
 	  	logstream(LOG_INFO) << "Spawning " << nfibers << " threads" << std::endl;
