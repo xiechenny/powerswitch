@@ -1207,8 +1207,9 @@ namespace graphlab {
 								<<" executed "<<tmpexec
 								<<" time_at "<<globaltimer.current_time_millis()/1000
 								<<std::endl;
+					lastsampled = globaltimer.current_time_millis();
 				  }
-				  lastsampled = globaltimer.current_time_millis();
+				  
 		}
 		
         if (fiber_control::worker_has_fibers_on_queue()) fiber_control::yield();
