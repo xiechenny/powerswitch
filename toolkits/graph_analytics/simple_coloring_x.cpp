@@ -302,13 +302,14 @@ int main(int argc, char** argv) {
   }
   graphlab::omni_engine<graph_coloring> engine(dc, graph, exec_type, clopts);
   engine.add_edge_aggregator<int>("conflict_edge",conflict_edge,print_finalize);
-  if(aggregated_e)
+  if(aggregated_e){
   	engine.aggregate_periodic("conflict_edge", 10);
+	engine.aggregate_now("conflict_edge");
+  }
   //else if(aggregated_v)
   //	engine.aggregate_periodic("stable vertex", 10);
   
   engine.signal_all();
-  engine.aggregate_now("conflict_edge");
   engine.start();
 
   dc.cout() << "Colored in " << ti.current_time() << " seconds " << std::endl;

@@ -1539,7 +1539,7 @@ namespace graphlab {
 			  cm_handles[lvid]->lock.unlock();
 			}
 
-			double gtimer = globaltimer.current_time_millis();		
+			//double gtimer = globaltimer.current_time_millis();		
 			/**************************************************************************/
 			/*							   Begin Program							  */
 			/**************************************************************************/
@@ -1570,10 +1570,10 @@ namespace graphlab {
 												  vprog));
 				}
 				gather_result += xperform_gather(vid, vprog);
-				if(fiber_control::get_worker_id()==0){
+				/*if(fiber_control::get_worker_id()==0){
 		   			tm += (globaltimer.current_time_millis()-gtimer);
 					tmc++;
-		   		}
+		   		}*/
 				
 				for(size_t i = 0;i < gather_futures.size(); ++i) {
 				  gather_result += gather_futures[i]();
@@ -1587,16 +1587,16 @@ namespace graphlab {
 	  
 		   //xie insert tmp :
 		   //const vertex_data_type predata = local_vertex.data();
-		   double atimer = globaltimer.current_time_millis();	
+		   //double atimer = globaltimer.current_time_millis();	
 		   
 		   vertexlocks[lvid].lock();
 		   vprog.apply(context, vertex, gather_result.value);	   
 		   vertexlocks[lvid].unlock();
 		   
-	 	   if(fiber_control::get_worker_id()==0){
+	 	   /*if(fiber_control::get_worker_id()==0){
 		   	tc += (globaltimer.current_time_millis()-atimer);
 			tcc++;
-		   } 
+		   } */
 	  		
 		   /**************************************************************************/
 		   /*							 scatter phase								 */
@@ -1630,7 +1630,7 @@ namespace graphlab {
 		   // xie insert end 
 		   else */				
 
-		    double stimer = globaltimer.current_time_millis();	
+		    //double stimer = globaltimer.current_time_millis();	
 		   {
 			   std::vector<request_future<void> > scatter_futures;
 			   foreach(procid_t mirror, local_vertex.mirrors()) {
@@ -1643,10 +1643,10 @@ namespace graphlab {
 												 local_vertex.data()));
 			   }
 			   xperform_scatter_local(lvid, vprog);
-			   if(fiber_control::get_worker_id()==0){
+			   /*if(fiber_control::get_worker_id()==0){
 		   			ts += (globaltimer.current_time_millis()-stimer);
 					tsc++;
-		   		} 
+		   		}*/ 
 			   
 			   for(size_t i = 0;i < scatter_futures.size(); ++i) 
 				 scatter_futures[i]();
@@ -1665,10 +1665,10 @@ namespace graphlab {
 			xrelease_exclusive_access_to_vertex(lvid);
 			programs_executed.inc(); 
 
-	  		if(fiber_control::get_worker_id()==0){
+	  		/*if(fiber_control::get_worker_id()==0){
 		   		tall += (globaltimer.current_time_millis()-allt);
 				tallc++;
-		    } 
+		      } */
 			//if(fiber_control::get_worker_id()==0) 
 			{
 				  //if((rmi.procid()==0)&&(endcounter[0]%500==0)/*||(fiber_control::get_worker_id()==21)*/)
@@ -1824,6 +1824,7 @@ namespace graphlab {
 							logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 								<<" thro "<<(tmpexec-lastexecuted)/durtime
 								<<" active "<<active[now]
+								<<" executed "<<tmpexec
 								<<" time_at "<<globaltimer.current_time_millis()/1000
 								<<std::endl;
 
@@ -1989,7 +1990,7 @@ namespace graphlab {
 	  
 			
 			
-	  		if(running_mode==X_SAMPLE){
+	  		/*+if(running_mode==X_SAMPLE){
 			  	termination_reason = execution_status::TASK_DEPLETION;
 
 			  double local_thro = avgthroughput/avgcount;
@@ -2012,7 +2013,7 @@ namespace graphlab {
 					<<" ts_avg "<<ts/tsc
 					<<" tall "<<tall/tallc
 					<<std::endl;
-			}
+			}*/
 			 
 			  	
 			//if need to activate next mode
@@ -2930,12 +2931,24 @@ namespace graphlab {
 			double thro = lastactive/this_iter_time/rmi.numprocs();
 			if(c<0){
 				c = 0;
+				k = this_iter_time/lastactive;
 				thro_now = thro;
 			}
 			else {
-				double tmpk = -1;
-				double tmpc = -1;
+				double tmpc;
+				double tmpk;
 				
+				if(k*lastactive<=this_iter_time){
+					tmpc = this_iter_time-k*lastactive;
+					tmpk = k;
+				}
+				else if(k*lastactive>this_iter_time){
+					tmpk = this_iter_time/lastactive;
+					tmpc = last_iter_time-tmpk*prelastactive;
+				}
+				k = (k+tmpk)/iteration_counter;
+				c = (c+tmpc)/(iteration_counter-1);
+				/*
 				if(lastactive!=prelastactive){
 					tmpk = (last_iter_time-this_iter_time)/(prelastactive-lastactive);
 					tmpc = last_iter_time-k*lastactive;
@@ -2949,10 +2962,10 @@ namespace graphlab {
 					k = k*(iteration_counter-2)+k/(iteration_counter-1);
 					c = c*(iteration_counter-2)+c/(iteration_counter-1);
 				}
-				
-				if(k>0)
-					thro_now = total_active_vertices/rmi.numprocs()/(k*total_active_vertices+c);
-				else thro_now = thro;
+				*/
+				//if(k>0)
+				thro_now = total_active_vertices/rmi.numprocs()/(k*total_active_vertices+c);
+				//else thro_now = thro;
 				
 				/*if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
@@ -3001,7 +3014,7 @@ namespace graphlab {
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
 							<<" ,tol_active "<<total_active_vertices//<<" X_S_Increase_Rate "<<X_S_Increase_Rate
 							<<" ,avg_inc "<<avg_inc_rate
-							<<" ,timeat "<<globaltimer.current_time_millis()
+							<<" ,timeat "<<globaltimer.current_time_millis()/1000
 							<<rmi.numprocs()<<std::endl;
 
 					countoverhead = globaltimer.current_time_millis();
