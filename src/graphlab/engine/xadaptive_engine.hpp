@@ -1431,7 +1431,7 @@ namespace graphlab {
 			} 
 	  
 			// release locks
-			if (!factorized_consistency) {
+			if ((!factorized_consistency)&&(cm_handles[lvid]!=NULL)) {
 			  cmlocks->philosopher_stops_eating_per_replica(lvid);
 			}
 		  }
@@ -2500,6 +2500,10 @@ namespace graphlab {
     }
     if (!factorized_consistency) {
         cm_handles.resize(graph.num_local_vertices());
+		//xie insert
+		for(uint32_t i = 0; i<graph.num_local_vertices();i++)
+			cm_handles[i] = NULL;
+		
     }
     rmi.barrier();
   } // end of synchronous engine
