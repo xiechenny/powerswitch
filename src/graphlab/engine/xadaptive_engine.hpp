@@ -1801,6 +1801,12 @@ namespace graphlab {
 						avgcount++;
 						lastexecuted = programs_executed.value;
 						lastsampled = globaltimer.current_time_millis();
+
+						if(programs_executed.value>tasknum){
+							stop_async = true;
+							for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
+								  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
+						}
 					}
 				}
 				else {
@@ -1990,17 +1996,16 @@ namespace graphlab {
 	  
 			
 			
-	  		/*+if(running_mode==X_SAMPLE){
-			  	termination_reason = execution_status::TASK_DEPLETION;
-
+	  		if(running_mode==X_SAMPLE){
+			  termination_reason = execution_status::TASK_DEPLETION;
 			  double local_thro = avgthroughput/avgcount;
 			  rmi.all_reduce(local_thro);
 			  rmi.cout()<<"================ sampled result ============="<<std::endl
 			  		<<"throughput "<<(local_thro/rmi.numprocs())
 					<<" #e/#n "<<(graph.num_edges()*1.0/graph.num_vertices())
-					<<" r-1 "<<(graph.num_replicas()*1.0/graph.num_vertices()-1)
-					<<std::endl
-			  		<<" tm "<<tm
+					<<" r "<<(graph.num_replicas()*1.0/graph.num_vertices())
+					<<std::endl;
+			  		/*<<" tm "<<tm
 					<<" tc "<<tc
 					<<" ts "<<ts
 					<<std::endl
@@ -2012,12 +2017,10 @@ namespace graphlab {
 					<<" tc_avg "<<tc/tcc
 					<<" ts_avg "<<ts/tsc
 					<<" tall "<<tall/tallc
-					<<std::endl;
-			}*/
-			 
-			  	
+					<<std::endl;*/
+			}
 			//if need to activate next mode
-			if(stop_async){
+			else if(stop_async){
 			  rmi.full_barrier();
 			  {
 				  //if(rmi.procid()==0)
@@ -2030,7 +2033,7 @@ namespace graphlab {
 				  termination_reason = execution_status::MODE_SWITCH;
 			  }
 			}
-		  //xie insert: end of local switch range
+		    //xie insert: end of local switch range
 		  
 			// if termination reason was not changed, then it must be depletion
 			if (termination_reason == execution_status::RUNNING) {
