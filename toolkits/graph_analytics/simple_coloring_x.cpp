@@ -182,14 +182,14 @@ struct save_colors{
 size_t inited = 0;
 
 //xie insert init
-void init_vertex(graph_type::vertex_type& vertex) { vertex.data().color = (rand()%(inited)); }
+void init_vertex(graph_type::vertex_type& vertex) { vertex.data().color = (rand()%(inited)); vertex.data().checknum = 0;}
 
 
 uint64_t conflict_edge(graph_coloring::icontext_type& context,
                                 const graph_type::edge_type& edge) {
-         int ret=0;
-		 if (edge.source().data().color == edge.target().data().color)
-		 	ret = 1;
+         int ret=1;
+		 if (((edge.target().data().checknum==0)&&(edge.source().data().checknum==0))||(edge.source().data().color == edge.target().data().color))
+		 	ret = 0;
          return ret;
 	}
 
