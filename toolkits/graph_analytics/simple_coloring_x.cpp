@@ -194,7 +194,7 @@ struct save_colors{
 size_t inited = 0;
 
 //xie insert init
-void init_vertex(graph_type::vertex_type& vertex) { vertex.data().color = (rand()%(inited)); vertex.data().checknum = -1;}
+void init_vertex(graph_type::vertex_type& vertex) { vertex.data().color = (rand()%(inited)); vertex.data().checknum = -1; vertex.data().compare = -1;}
 
 
 uint64_t conflict_edge(graph_coloring::icontext_type& context,
