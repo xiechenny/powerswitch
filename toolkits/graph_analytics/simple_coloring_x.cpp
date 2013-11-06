@@ -93,6 +93,9 @@ typedef graphlab::distributed_graph<v_data,
 /*
  * On gather, we accumulate a set of all adjacent colors.
  */
+
+graphlab::timer ti;
+
 class graph_coloring:
       public graphlab::ivertex_program<graph_type,
                                       set_union_gather>,
@@ -133,8 +136,7 @@ public:
 	    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
 	      if (neighborhood.colors.count(curcolor) == 0) {
 	        vertex.data().color = curcolor;
-			vertex.data().checknum ++;
-			if(vertex.data().checknum==0)
+			if(ti.current_time()<80)
 				vertex.data().compare = vertex.data().color;
 	        break;
 	      }
@@ -299,8 +301,6 @@ int main(int argc, char** argv) {
   dc.cout() << "Number of vertices: " << graph.num_vertices() << std::endl
     << "Number of edges:    " << graph.num_edges() << std::endl;
 
-  graphlab::timer ti;
-
   //xie insert
   if(inited>0)
   	graph.transform_vertices(init_vertex);
@@ -326,8 +326,9 @@ int main(int argc, char** argv) {
   //	engine.aggregate_periodic("vertex_color", 20);
   
   engine.signal_all();
-  engine.start();
 
+  ti.start();
+  engine.start();
   dc.cout() << "Colored in " << ti.current_time() << " seconds " << std::endl;
 
   size_t conflict_count = graph.map_reduce_edges<size_t>(validate_conflict);
