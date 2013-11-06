@@ -211,7 +211,7 @@ uint64_t conflict_edge(graph_coloring::icontext_type& context,
 	}
 uint64_t vertex_color(graph_coloring::icontext_type& context,
                                 const graph_type::vertex_type vertex) {
-		if(vertex.data().color==vertex.data().compare)
+		if((context.procid()==0)&&(vertex.data().color==vertex.data().compare))
 			return 1;
 		else return 0;
 }

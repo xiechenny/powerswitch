@@ -1826,7 +1826,7 @@ namespace graphlab {
 						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter+6)%11])/avg_line[(iteration_counter+6)%11];
 					  }
 
-					  if(rmi.procid()==0)
+					  //if(rmi.procid()==0)
 							logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 								<<" thro "<<(tmpexec-lastexecuted)/durtime
 								<<" active "<<active[now]
