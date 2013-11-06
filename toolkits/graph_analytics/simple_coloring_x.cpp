@@ -138,6 +138,11 @@ public:
 	        vertex.data().color = curcolor;
 			if(ti.current_time()<80)
 				vertex.data().compare = vertex.data().color;
+
+			/*vertex.data().checknum ++;
+			if(vertex.data().checknum==0)
+				vertex.data().compare = vertex.data().color;*/
+			
 	        break;
 	      }
 	}
