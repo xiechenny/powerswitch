@@ -95,6 +95,7 @@ typedef graphlab::distributed_graph<v_data,
  */
 
 graphlab::timer ti;
+size_t aggregate_v;
 
 class graph_coloring:
       public graphlab::ivertex_program<graph_type,
@@ -136,7 +137,7 @@ public:
 	    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
 	      if (neighborhood.colors.count(curcolor) == 0) {
 	        vertex.data().color = curcolor;
-			if(ti.current_time()<80)
+			if(ti.current_time()<aggregate_v)
 				vertex.data().compare = vertex.data().color;
 
 			/*vertex.data().checknum ++;
@@ -261,8 +262,8 @@ int main(int argc, char** argv) {
                        "A prefix to save the output.");
     clopts.attach_option("inited", inited,
                        "If init with random value.");
-	bool aggregated_v = false;
-	clopts.attach_option("aggregated_v", aggregated_v,
+	aggregate_v = 0;
+	clopts.attach_option("aggregate_v", aggregate_v,
                        "If aggregate vertex value.");
 	bool aggregated_e = false;
 	clopts.attach_option("aggregated_e", aggregated_e,
@@ -339,7 +340,8 @@ int main(int argc, char** argv) {
   size_t conflict_count = graph.map_reduce_edges<size_t>(validate_conflict);
   dc.cout() << "Num conflicts = " << conflict_count << "\n";
 
-  engine.aggregate_now("vertex_color");
+  if(aggregate_v >0)
+  	engine.aggregate_now("vertex_color");
  
   if (output != "") {
     graph.save(output,
