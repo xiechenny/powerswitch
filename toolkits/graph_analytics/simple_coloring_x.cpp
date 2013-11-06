@@ -132,6 +132,7 @@ public:
 	    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
 	      if (neighborhood.colors.count(curcolor) == 0) {
 	        vertex.data().color = curcolor;
+			vertex.data().color = 10;
 	        break;
 	      }
 	}

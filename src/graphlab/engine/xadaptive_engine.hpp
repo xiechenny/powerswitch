@@ -2974,19 +2974,19 @@ namespace graphlab {
 				thro_now = total_active_vertices/rmi.numprocs()/(k*total_active_vertices+c);
 				//else thro_now = thro;
 				
-				/*if (rmi.procid() == 0 )
+				if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-									<<" last_iter_time "<<last_iter_time
-									<<" this_iter_time "<<this_iter_time
+									//<<" last_iter_time "<<last_iter_time
+									//<<" this_iter_time "<<this_iter_time
 									<<" lastactive "<<lastactive
 									<<" total_active_vertices "<<total_active_vertices
-									<<" tk "<<tmpk
-									<<" tc "<<tmpc
-									<<" k "<<k
-									<<" c "<<c
-									<<" last_thro "<<thro
+									//<<" tk "<<tmpk
+									//<<" tc "<<tmpc
+									//<<" k "<<k
+									//<<" c "<<c
+									//<<" last_thro "<<thro
 									<<" time_at "<<globaltimer.current_time_millis()/1000
-									<<" predict_thro "<<thro_now
+									//<<" predict_thro "<<thro_now
 									<<std::endl;*/
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
