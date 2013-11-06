@@ -2791,6 +2791,7 @@ namespace graphlab {
     return allocated_memory;
   } // compute the total memory usage of the GraphLab system
 
+
   template<typename VertexProgram> execution_status::status_enum
 	xadaptive_engine<VertexProgram>::sstart() {
 	  //xie insert
@@ -3109,7 +3110,7 @@ namespace graphlab {
 		  logstream(LOG_EMPH) << "\t Running Aggregators" << std::endl;
 		// probe the aggregator
 		aggregator.tick_synchronous();
-  
+
 		++iteration_counter;
   
 		if (snapshot_interval > 0 && iteration_counter % snapshot_interval == 0) {

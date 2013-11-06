@@ -37,7 +37,8 @@ bool EDGE_CONSISTENT = false;
 
 struct v_data{
    color_type color;
-   size_t checknum;
+   int checknum;
+   color_type compare;
    void save(graphlab::oarchive& oarc) const {
     oarc << color<<checknum;
   }
@@ -132,7 +133,9 @@ public:
 	    for (color_type curcolor = 0; curcolor < neighborhoodsize + 1; ++curcolor) {
 	      if (neighborhood.colors.count(curcolor) == 0) {
 	        vertex.data().color = curcolor;
-			vertex.data().checknum = 10;
+			vertex.data().checknum ++;
+			if(vertex.data().checknum==0)
+				vertex.data().compare = vertex.data().color;
 	        break;
 	      }
 	}
@@ -183,7 +186,7 @@ struct save_colors{
 size_t inited = 0;
 
 //xie insert init
-void init_vertex(graph_type::vertex_type& vertex) { vertex.data().color = (rand()%(inited)); vertex.data().checknum = 0;}
+void init_vertex(graph_type::vertex_type& vertex) { vertex.data().color = (rand()%(inited)); vertex.data().checknum = -1;}
 
 
 uint64_t conflict_edge(graph_coloring::icontext_type& context,
@@ -196,9 +199,19 @@ uint64_t conflict_edge(graph_coloring::icontext_type& context,
 
 	void print_finalize(graph_coloring::icontext_type& context, uint64_t total) {
 		if(context.procid()==0)
-			logstream(LOG_INFO)<<" ======== non conflict: ====== "<< total << "\n";
+			logstream(LOG_INFO)<<" ======== non_conflict ====== "<< total << "\n";
 	}
-	  
+uint64_t vertex_color(graph_coloring::icontext_type& context,
+                                const graph_type::vertex_type vertex) {
+		if(vertex.data().color==vertex.data().checknum)
+			return 1;
+		else return 0;
+}
+      
+void print_void(graph_coloring::icontext_type& context, uint64_t total) {
+        if(context.procid()==0)
+			logstream(LOG_INFO)<<" ======== stable_vertex ====== "<< total << "\n";
+}
 
 
 /**************************************************************************/
@@ -303,12 +316,14 @@ int main(int argc, char** argv) {
   }
   graphlab::omni_engine<graph_coloring> engine(dc, graph, exec_type, clopts);
   engine.add_edge_aggregator<int>("conflict_edge",conflict_edge,print_finalize);
+  engine.add_vertex_aggregator<int>("vertex_color",vertex_color,print_void);
+  	
   if(aggregated_e){
-  	engine.aggregate_periodic("conflict_edge", 10);
+  	engine.aggregate_periodic("conflict_edge", 20);
 	engine.aggregate_now("conflict_edge");
   }
-  //else if(aggregated_v)
-  //	engine.aggregate_periodic("stable vertex", 10);
+  //if(aggregated_v)
+  //	engine.aggregate_periodic("vertex_color", 20);
   
   engine.signal_all();
   engine.start();
@@ -317,6 +332,9 @@ int main(int argc, char** argv) {
 
   size_t conflict_count = graph.map_reduce_edges<size_t>(validate_conflict);
   dc.cout() << "Num conflicts = " << conflict_count << "\n";
+
+  engine.aggregate_now("vertex_color");
+ 
   if (output != "") {
     graph.save(output,
               save_colors(),
