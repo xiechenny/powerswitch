@@ -1806,7 +1806,7 @@ namespace graphlab {
 					{
 						throughput = (programs_executed.value-lastexecuted)/nowtime;
 						//stop_async = true;
-						if(rmi.procid()==0)
+						//if(rmi.procid()==0)
 						  	logstream(LOG_INFO)<< rmi.procid()
 						  	<< ": -------thro_a--------- "<<throughput
 						  	<<" at "<<globaltimer.current_time_millis()/1000<<std::endl;
