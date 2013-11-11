@@ -2042,11 +2042,11 @@ namespace graphlab {
 			  		rmi.all_reduce(local_thro);
 				  	running_mode = X_ADAPTIVE;
 					thro_A = (local_thro/rmi.numprocs());
-					logstream(LOG_INFO)<< "Get async thro now: "<<thro_A<<std::endl;
+					logstream(LOG_INFO)<< "Get async thro now: "<<avgthroughput<<std::endl;
 			  	  }
-				  //if(rmi.procid()==0)
+				  if(rmi.procid()==0)
 				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async
-				  <<" added "<<xmessages.num_act()
+				  //<<" added "<<xmessages.num_act()
 				  <<std::endl;
 				  
 				  //messages should be sent into next mode then clear
