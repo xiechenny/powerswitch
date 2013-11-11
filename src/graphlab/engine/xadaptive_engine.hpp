@@ -2509,6 +2509,7 @@ namespace graphlab {
 	X_A_Delay = 200;
 	A_Sampled_Iters = 5;
 	T_SAMPLE = 1000;
+	rate_AvsS=0.75;
 	endgame_mode = true;
 
 	//xie insert : set sync & async opts
