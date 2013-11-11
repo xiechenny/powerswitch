@@ -1817,6 +1817,7 @@ namespace graphlab {
 
 						if(programs_executed.value>tasknum){
 							stop_async = true;
+							first_time_start = false;
 							for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 								  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 						}
