@@ -2035,15 +2035,16 @@ namespace graphlab {
 			}
 			//if need to activate next mode
 			else if(stop_async){
-			  rmi.full_barrier();
-			  {
-			  	  if(running_mode==X_S_ADAPTIVE){
+			  if(running_mode==X_S_ADAPTIVE){
 				  	double local_thro = avgthroughput/avgcount;
 			  		rmi.all_reduce(local_thro);
 				  	running_mode = X_ADAPTIVE;
 					thro_A = (local_thro/rmi.numprocs());
-					logstream(LOG_INFO)<< "Get async thro now: "<<avgthroughput<<std::endl;
-			  	  }
+					if(rmi.procid()==0)
+						logstream(LOG_INFO)<< "Get async thro now: "<<thro_A<<std::endl;
+			  }
+			  rmi.full_barrier();
+			  {	 
 				  if(rmi.procid()==0)
 				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async
 				  //<<" added "<<xmessages.num_act()
