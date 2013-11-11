@@ -3007,9 +3007,10 @@ namespace graphlab {
 									//<<" tc "<<tmpc
 									//<<" k "<<k
 									//<<" c "<<c
-									//<<" last_thro "<<thro
+									<<" last_thro "<<thro
 									<<" time_at "<<globaltimer.current_time_millis()/1000
-									//<<" predict_thro "<<thro_now
+									<<" predict_thro "<<thro_now
+									<<" thro_a "<<thro_A
 									<<std::endl;
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
