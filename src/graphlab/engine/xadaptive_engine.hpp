@@ -2992,7 +2992,7 @@ namespace graphlab {
 					tmpc = last_iter_time-tmpk*prelastactive;
 				}
 				k = (k+tmpk)/iteration_counter;
-				c = (c+tmpc)/(iteration_counter-1);
+				c = (c+tmpc)/(iteration_counter);
 				/*
 				if(lastactive!=prelastactive){
 					tmpk = (last_iter_time-this_iter_time)/(prelastactive-lastactive);
