@@ -1664,7 +1664,8 @@ namespace graphlab {
 			}
 			xrelease_exclusive_access_to_vertex(lvid);
 			programs_executed.inc(); 
-
+			tall = globaltimer.current_time_millis();
+			
 	  		/*if(fiber_control::get_worker_id()==0){
 		   		tall += (globaltimer.current_time_millis()-allt);
 				tallc++;
@@ -2043,7 +2044,9 @@ namespace graphlab {
 			size_t ctasks = programs_executed.value;
 			rmi.all_reduce(ctasks);
 			programs_executed.value = ctasks;
-	  
+
+	  		logstream(LOG_INFO)<< "Last task end at "<<tall<<std::endl;
+	  	
 			rmi.cout() << "Completed Tasks: " << programs_executed.value << std::endl;
 	  
 	  
