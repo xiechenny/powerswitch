@@ -2042,6 +2042,7 @@ namespace graphlab {
 			  		rmi.all_reduce(local_thro);
 				  	running_mode = X_ADAPTIVE;
 					thro_A = (local_thro/rmi.numprocs());
+					logstream(LOG_INFO)<< "Get async thro now: "<<thro_A<<std::endl;
 			  	  }
 				  //if(rmi.procid()==0)
 				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async
@@ -3001,8 +3002,8 @@ namespace graphlab {
 					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 									//<<" last_iter_time "<<last_iter_time
 									//<<" this_iter_time "<<this_iter_time
-									<<" lastactive "<<lastactive
-									<<" total_active_vertices "<<total_active_vertices
+									//<<" lastactive "<<lastactive
+									//<<" total_active_vertices "<<total_active_vertices
 									//<<" tk "<<tmpk
 									//<<" tc "<<tmpc
 									//<<" k "<<k
@@ -3010,7 +3011,6 @@ namespace graphlab {
 									<<" last_thro "<<thro
 									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<" predict_thro "<<thro_now
-									<<" thro_a "<<thro_A
 									<<std::endl;
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
