@@ -1800,7 +1800,7 @@ namespace graphlab {
 	  
 			  //xie insert
 			  if(threadid%3001==0){
-			  	if((running_mode==X_SAMPLE)||(running_mode==X_S_ADAPTIVE)){
+			  	if(running_mode==X_SAMPLE){
 				  	double nowtime = globaltimer.current_time_millis()-lastsampled;
 					if(nowtime>T_SAMPLE)
 					{
@@ -1821,6 +1821,18 @@ namespace graphlab {
 							for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 								  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 						}
+					}
+				}
+				else if(running_mode==X_S_ADAPTIVE){
+					size_t tmpexec = programs_executed.value;
+					if(tmpexec>tasknum)
+					{
+						double nowtime = globaltimer.current_time_millis()-lastsampled;
+						throughput = (tmpexec-lastexecuted)/nowtime;
+						avgthroughput+=throughput;
+						avgcount++;
+						stop_async = true;
+						first_time_start = false;
 					}
 				}
 				else {
