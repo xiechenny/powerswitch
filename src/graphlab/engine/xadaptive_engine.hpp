@@ -3019,11 +3019,11 @@ namespace graphlab {
 									//<<" total_active_vertices "<<total_active_vertices
 									//<<" tk "<<tmpk
 									//<<" tc "<<tmpc
-									//<<" k "<<k
-									//<<" c "<<c
+									<<" k "<<k
+									<<" c "<<c
 									<<" last_thro "<<thro
-									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<" predict_thro "<<thro_now
+									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 				total_act=total_active_vertices;
 				lasttime = globaltimer.current_time_millis();
