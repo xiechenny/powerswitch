@@ -65,6 +65,8 @@
 #define X_MANUAL 3
 #define X_ADAPTIVE 4
 #define X_SAMPLE 5
+#define X_S_ADAPTIVE 6
+
 
 //#define LEAST_EXECUTE_TIME 1
 
@@ -814,6 +816,16 @@ namespace graphlab {
 				  	if (rmi.procid() == 0)
 						logstream(LOG_EMPH) << "Engine Option: set mode X_ADAPTIVE"<< std::endl;
 				  }
+			  }
+			  else if(opt=="s_auto"){
+				bool samode = false; 
+				opts.get_engine_args().get_option("s_auto", samode);
+				if(samode){
+					running_mode = X_S_ADAPTIVE;
+					current_engine = X_ASYNC;
+				  	if (rmi.procid() == 0)
+						logstream(LOG_EMPH) << "Engine Option: set mode X_S_ADAPTIVE"<< std::endl;
+				}	
 			  }
 			  else if(opt == "manual"){
 				  bool rmode = false; 
@@ -1788,7 +1800,7 @@ namespace graphlab {
 	  
 			  //xie insert
 			  if(threadid%3001==0){
-			  	if(running_mode==X_SAMPLE){
+			  	if((running_mode==X_SAMPLE)||(running_mode==X_S_ADAPTIVE)){
 				  	double nowtime = globaltimer.current_time_millis()-lastsampled;
 					if(nowtime>T_SAMPLE)
 					{
@@ -2024,6 +2036,12 @@ namespace graphlab {
 			else if(stop_async){
 			  rmi.full_barrier();
 			  {
+			  	  if(running_mode==X_S_ADAPTIVE){
+				  	double local_thro = avgthroughput/avgcount;
+			  		rmi.all_reduce(local_thro);
+				  	running_mode = X_ADAPTIVE;
+					thro_A = (local_thro/rmi.numprocs());
+			  	  }
 				  //if(rmi.procid()==0)
 				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async
 				  <<" added "<<xmessages.num_act()
