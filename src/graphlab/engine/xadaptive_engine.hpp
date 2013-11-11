@@ -2063,7 +2063,7 @@ namespace graphlab {
 			rmi.all_reduce(ctasks);
 			programs_executed.value = ctasks;
 
-	  		logstream(LOG_INFO)<< "Last task end at "<<tall<<std::endl;
+	  		//logstream(LOG_INFO)<< "Last task end at "<<tall<<std::endl;
 	  	
 			rmi.cout() << "Completed Tasks: " << programs_executed.value << std::endl;
 	  
