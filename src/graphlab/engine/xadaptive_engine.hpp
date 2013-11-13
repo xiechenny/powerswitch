@@ -2978,6 +2978,22 @@ namespace graphlab {
 				c = 0;
 				k = this_iter_time/lastactive;
 				thro_now = thro;
+
+			if (rmi.procid() == 0 )
+					logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"- "
+									<<" last "<<last_iter_time
+									<<" this "<<this_iter_time
+									<<" llasta "<<prelastactive
+									<<" lasta "<<lastactive
+									<<" thisa "<<total_active_vertices
+									<<" tk "<<"-"
+									<<" tc "<<"-"
+									<<" k "<<k
+									<<" c "<<c
+									<<" l_thro "<<thro
+									<<" p_thro "<<thro_now
+									//<<" timeat "<<globaltimer.current_time_millis()/1000
+									<<std::endl;
 			}
 			else {
 				double tmpc;
@@ -2986,30 +3002,42 @@ namespace graphlab {
 				if(lastactive!=prelastactive){
 					tmpk = (last_iter_time-this_iter_time)/(prelastactive-lastactive);
 					tmpc = this_iter_time-tmpk*lastactive;
+					if(tmpc<0){
+						double tmpk2 = last_iter_time/prelastactive;
+						tmpk = this_iter_time/lastactive;
+						if(tmpk2<tmpk){
+							tmpc = (this_iter_time-tmpk2*lastactive)/2;
+							tmpk = tmpk2;
+						}
+						else{
+							tmpc = (last_iter_time-tmpk*prelastactive)/2;
+						}
+					}
 				}
 				
 				if(tmpk>0){
-					k = k*(iteration_counter-2)+tmpk/(iteration_counter-1);
-					c = c*(iteration_counter-2)+tmpc/(iteration_counter-1);
+					k = (k*(iteration_counter-2)+tmpk)/(iteration_counter-1);
+					c = (c*(iteration_counter-2)+tmpc)/(iteration_counter-1);
 				}
 				
 				//if(k>0)
-				thro_now = total_active_vertices/rmi.numprocs()/(k*total_active_vertices+c);
+				thro_now = total_active_vertices/(k*total_active_vertices+c)/rmi.numprocs();
 				//else thro_now = thro;
 				
 				if (rmi.procid() == 0 )
-					logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-									//<<" last_iter_time "<<last_iter_time
-									//<<" this_iter_time "<<this_iter_time
-									//<<" lastactive "<<lastactive
-									//<<" total_active_vertices "<<total_active_vertices
-									//<<" tk "<<tmpk
-									//<<" tc "<<tmpc
+					logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"- "
+									//<<" last "<<last_iter_time
+									<<" this "<<this_iter_time
+									//<<" llasta "<<prelastactive
+									<<" lasta "<<lastactive
+									<<" thisa "<<total_active_vertices
+									<<" tk "<<tmpk
+									<<" tc "<<tmpc
 									<<" k "<<k
 									<<" c "<<c
-									<<" last_thro "<<thro
-									<<" predict_thro "<<thro_now
-									<<" time_at "<<globaltimer.current_time_millis()/1000
+									<<" l_thro "<<thro
+									<<" p_thro "<<thro_now
+									//<<" timeat "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 				total_act=total_active_vertices;
 			}
@@ -3076,10 +3104,8 @@ namespace graphlab {
 					break;
 				
 			}
-			timelast = globaltimer.current_time_millis();
-		
 		}
-		
+		timelast = globaltimer.current_time_millis();
 
 		
 		
