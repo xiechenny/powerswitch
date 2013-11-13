@@ -2983,31 +2983,16 @@ namespace graphlab {
 				double tmpc;
 				double tmpk;
 				
-				if(k*lastactive<=this_iter_time){
-					tmpc = this_iter_time-k*lastactive;
-					tmpk = k;
-				}
-				else if(k*lastactive>this_iter_time){
-					tmpk = this_iter_time/lastactive;
-					tmpc = last_iter_time-tmpk*prelastactive;
-				}
-				k = (k+tmpk)/iteration_counter;
-				c = (c+tmpc)/(iteration_counter);
-				/*
 				if(lastactive!=prelastactive){
 					tmpk = (last_iter_time-this_iter_time)/(prelastactive-lastactive);
-					tmpc = last_iter_time-k*lastactive;
+					tmpc = this_iter_time-tmpk*lastactive;
 				}
 				
 				if(tmpk>0){
 					k = k*(iteration_counter-2)+tmpk/(iteration_counter-1);
 					c = c*(iteration_counter-2)+tmpc/(iteration_counter-1);
 				}
-				else{
-					k = k*(iteration_counter-2)+k/(iteration_counter-1);
-					c = c*(iteration_counter-2)+c/(iteration_counter-1);
-				}
-				*/
+				
 				//if(k>0)
 				thro_now = total_active_vertices/rmi.numprocs()/(k*total_active_vertices+c);
 				//else thro_now = thro;
@@ -3027,7 +3012,6 @@ namespace graphlab {
 									<<" time_at "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 				total_act=total_active_vertices;
-				lasttime = globaltimer.current_time_millis();
 			}
 			last_iter_time = this_iter_time;
 			total_act+=total_active_vertices;
@@ -3037,8 +3021,7 @@ namespace graphlab {
 			//}
 			prelastactive = lastactive;	
 			lastactive = total_active_vertices;
-			timelast = globaltimer.current_time_millis();
-
+			
 			if(running_mode==X_SAMPLE)
 			{
 				double now = globaltimer.current_time_millis();
@@ -3093,6 +3076,7 @@ namespace graphlab {
 					break;
 				
 			}
+			timelast = globaltimer.current_time_millis();
 		
 		}
 		
