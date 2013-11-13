@@ -2985,7 +2985,7 @@ namespace graphlab {
 									<<" this "<<this_iter_time
 									//<<" llasta "<<prelastactive
 									<<" lasta "<<lastactive
-									<<" thisa "<<total_active_vertices
+									//<<" thisa "<<total_active_vertices
 									//<<" tk "<<"-"
 									//<<" tc "<<"-"
 									//<<" k "<<k
