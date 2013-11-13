@@ -3024,20 +3024,19 @@ namespace graphlab {
 				thro_now = total_active_vertices/(k*total_active_vertices+c)/rmi.numprocs();
 				//else thro_now = thro;
 				
-				if (rmi.procid() == 0 )
-					logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"- "
-									//<<" last "<<last_iter_time
+				logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"- "
+									<<" last "<<last_iter_time
 									<<" this "<<this_iter_time
 									//<<" llasta "<<prelastactive
 									<<" lasta "<<lastactive
-									<<" thisa "<<total_active_vertices
-									<<" tk "<<tmpk
-									<<" tc "<<tmpc
-									<<" k "<<k
-									<<" c "<<c
+									//<<" thisa "<<total_active_vertices
+									//<<" tk "<<tmpk
+									//<<" tc "<<tmpc
+									//<<" k "<<k
+									//<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
-									//<<" timeat "<<globaltimer.current_time_millis()/1000
+									<<" timeat "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 				total_act=total_active_vertices;
 			}
