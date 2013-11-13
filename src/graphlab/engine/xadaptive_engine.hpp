@@ -1852,14 +1852,14 @@ namespace graphlab {
 						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter+6)%11])/avg_line[(iteration_counter+6)%11];
 					  }
 
-					  //if(rmi.procid()==0)
+					  /*if(rmi.procid()==0)
 							logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
 								<<" thro "<<(tmpexec-lastexecuted)/durtime
 								<<" active "<<active[now]
 								<<" executed "<<tmpexec
 								<<" time_at "<<globaltimer.current_time_millis()/1000
 								<<std::endl;
-
+						*/
 					  if(running_mode==X_ADAPTIVE){
 						  double comparable = thro_A*durtime/rate_AvsS;
 						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
@@ -1869,7 +1869,7 @@ namespace graphlab {
 						  	  first_time_start = false;
 							  //set prepare to stop
 							  stop_async = true;
-							  //if(rmi.procid()==0)
+							  if(rmi.procid()==0)
 							  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
 							  		<<avg_inc_rate
 									<<" ,lastadd "<<lastadd
@@ -2983,16 +2983,16 @@ namespace graphlab {
 					logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"- "
 									<<" last "<<last_iter_time
 									<<" this "<<this_iter_time
-									<<" llasta "<<prelastactive
+									//<<" llasta "<<prelastactive
 									<<" lasta "<<lastactive
 									<<" thisa "<<total_active_vertices
-									<<" tk "<<"-"
-									<<" tc "<<"-"
-									<<" k "<<k
-									<<" c "<<c
+									//<<" tk "<<"-"
+									//<<" tc "<<"-"
+									//<<" k "<<k
+									//<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
-									//<<" timeat "<<globaltimer.current_time_millis()/1000
+									<<" timeat "<<globaltimer.current_time_millis()/1000
 									<<std::endl;
 			}
 			else {
