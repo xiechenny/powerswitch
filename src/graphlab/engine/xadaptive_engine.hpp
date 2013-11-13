@@ -3031,10 +3031,10 @@ namespace graphlab {
 									//<<" llasta "<<prelastactive
 									<<" lasta "<<lastactive
 									//<<" thisa "<<total_active_vertices
-									<<" tk "<<tmpk
-									<<" tc "<<tmpc
-									//<<" k "<<k
-									//<<" c "<<c
+									//<<" tk "<<tmpk
+									//<<" tc "<<tmpc
+									<<" k "<<k
+									<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
 									<<" timeat "<<globaltimer.current_time_millis()/1000
