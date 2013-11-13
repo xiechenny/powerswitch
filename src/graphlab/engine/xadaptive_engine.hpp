@@ -3027,7 +3027,7 @@ namespace graphlab {
 				if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"- "
 									<<" last "<<last_iter_time
-									<<" this "<<this_iter_time
+									//<<" this "<<this_iter_time
 									//<<" llasta "<<prelastactive
 									<<" lasta "<<lastactive
 									//<<" thisa "<<total_active_vertices
