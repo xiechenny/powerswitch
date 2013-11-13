@@ -2974,7 +2974,7 @@ namespace graphlab {
 				
 			double this_iter_time = globaltimer.current_time_millis()-timelast;
 			double thro = lastactive/this_iter_time/rmi.numprocs();
-			/*if(c<0){
+			if(c<0){
 				c = 0;
 				k = this_iter_time/lastactive;
 				thro_now = thro;
@@ -3041,7 +3041,6 @@ namespace graphlab {
 									<<std::endl;
 				total_act=total_active_vertices;
 			}
-			*/
 			last_iter_time = this_iter_time;
 			total_act+=total_active_vertices;
 			//double nowt = globaltimer.current_time_millis();
