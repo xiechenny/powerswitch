@@ -3026,15 +3026,15 @@ namespace graphlab {
 
 				if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"- "
-									<<" last "<<last_iter_time
-									//<<" this "<<this_iter_time
+									//<<" last "<<last_iter_time
+									<<" this "<<this_iter_time
 									//<<" llasta "<<prelastactive
 									<<" lasta "<<lastactive
 									//<<" thisa "<<total_active_vertices
 									//<<" tk "<<tmpk
 									//<<" tc "<<tmpc
-									//<<" k "<<k
-									//<<" c "<<c
+									<<" k "<<k
+									<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
 									<<" timeat "<<globaltimer.current_time_millis()/1000
