@@ -3002,7 +3002,7 @@ namespace graphlab {
 				if(lastactive!=prelastactive){
 					tmpk = (last_iter_time-this_iter_time)/(prelastactive-lastactive);
 					tmpc = this_iter_time-tmpk*lastactive;
-					/*if(tmpc<0){
+					if(tmpc<0){
 						double tmpk2 = last_iter_time/prelastactive;
 						tmpk = this_iter_time/lastactive;
 						if(tmpk2<tmpk){
@@ -3012,9 +3012,9 @@ namespace graphlab {
 						else{
 							tmpc = (last_iter_time-tmpk*prelastactive)/2;
 						}
-					}*/
+					}
 
-					if((tmpk>0)&&(tmpc>0)){
+					if((tmpk>0)){
 						k = (k*(iteration_counter-2)+tmpk)/(iteration_counter-1);
 						c = (c*(iteration_counter-2)+tmpc)/(iteration_counter-1);
 					}
