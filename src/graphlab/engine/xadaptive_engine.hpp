@@ -1840,16 +1840,23 @@ namespace graphlab {
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
 				  if(durtime>T_SAMPLE){
 					  size_t tmpact = xmessages.num_act();
-					  size_t tmpexec = programs_executed.value;
-	
+					  size_t tmpexec = programs_executed.value;	
 					  size_t now = iteration_counter%11; 
+					  
 					  if(tmpact>=tmpexec)
 					  	active[now] = tmpact-tmpexec;
 					  else active[now]=0;
 					  
 					  {
-						  avg_line[now] = avg_line[(iteration_counter-1)%11]-(active[(iteration_counter-A_Sampled_Iters+11)%11]-active[now])/A_Sampled_Iters;
-						  avg_inc_rate = (avg_line[now]-avg_line[(iteration_counter+6)%11])/avg_line[(iteration_counter+6)%11];
+					  if(iteration_counter==0)
+					  		for(int i=0; i<11;i++){
+								avg_line[i] = active[now];
+								active[i] = active[now];
+							}
+					  else{
+						  avg_line[now] = avg_line[(iteration_counter+10)%11]+(active[now]-active[(iteration_counter-X_S_Sampled_Iters+11)%11])/X_S_Sampled_Iters;
+						  avg_inc_rate = avg_line[now]-avg_line[(iteration_counter+10)%11];
+					  }
 					  }
 
 					  /*if(rmi.procid()==0)
