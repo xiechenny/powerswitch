@@ -3002,7 +3002,7 @@ namespace graphlab {
 				if(lastactive!=prelastactive){
 					tmpk = (last_iter_time-this_iter_time)/(prelastactive-lastactive);
 					tmpc = this_iter_time-tmpk*lastactive;
-					if(tmpc<0){
+					/*if(tmpc<0){
 						double tmpk2 = last_iter_time/prelastactive;
 						tmpk = this_iter_time/lastactive;
 						if(tmpk2<tmpk){
@@ -3012,12 +3012,12 @@ namespace graphlab {
 						else{
 							tmpc = (last_iter_time-tmpk*prelastactive)/2;
 						}
+					}*/
+
+					if(tmpk>0){
+						k = (k*(iteration_counter-2)+tmpk)/(iteration_counter-1);
+						c = (c*(iteration_counter-2)+tmpc)/(iteration_counter-1);
 					}
-				}
-				
-				if(tmpk>0){
-					k = (k*(iteration_counter-2)+tmpk)/(iteration_counter-1);
-					c = (c*(iteration_counter-2)+tmpc)/(iteration_counter-1);
 				}
 				
 				//if(k>0)
@@ -3031,10 +3031,10 @@ namespace graphlab {
 									//<<" llasta "<<prelastactive
 									<<" lasta "<<lastactive
 									//<<" thisa "<<total_active_vertices
-									//<<" tk "<<tmpk
-									//<<" tc "<<tmpc
-									<<" k "<<k
-									<<" c "<<c
+									<<" tk "<<tmpk
+									<<" tc "<<tmpc
+									//<<" k "<<k
+									//<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
 									<<" timeat "<<globaltimer.current_time_millis()/1000
