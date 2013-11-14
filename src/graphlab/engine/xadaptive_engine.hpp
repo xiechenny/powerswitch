@@ -3022,8 +3022,8 @@ namespace graphlab {
 					}
 
 					if((tmpk>0)){
-						k = (k*(iteration_counter-2)+tmpk)/(iteration_counter-1);
-						c = (c*(iteration_counter-2)+tmpc)/(iteration_counter-1);
+						k = (k*1+tmpk)/3;
+						c = (c*2+tmpc)/3;
 					}
 					thro_now = total_active_vertices/(k*total_active_vertices+c)/rmi.numprocs();
 				}
