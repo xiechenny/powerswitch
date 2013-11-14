@@ -3022,7 +3022,7 @@ namespace graphlab {
 					}
 
 					if((tmpk>0)){
-						k = (k*1+tmpk)/3;
+						k = (k*2+tmpk)/3;
 						c = (c*2+tmpc)/3;
 					}
 					thro_now = total_active_vertices/(k*total_active_vertices+c)/rmi.numprocs();
