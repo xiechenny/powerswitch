@@ -3014,7 +3014,7 @@ namespace graphlab {
 						}
 					}*/
 
-					if((tmpk>0)&&(c>0)){
+					if((tmpk>0)&&(tmpc>0)){
 						k = (k*(iteration_counter-2)+tmpk)/(iteration_counter-1);
 						c = (c*(iteration_counter-2)+tmpc)/(iteration_counter-1);
 					}
