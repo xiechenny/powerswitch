@@ -2986,7 +2986,7 @@ namespace graphlab {
 				k = this_iter_time/lastactive;
 				thro_now = thro;
 
-				if (rmi.procid() == 0 )
+				/*if (rmi.procid() == 0 )
 					logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"-"
 									//<<" last "<<last_iter_time
 									<<" this "<<this_iter_time
@@ -3000,7 +3000,7 @@ namespace graphlab {
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
 									<<" timeat "<<globaltimer.current_time_millis()/1000
-									<<std::endl;
+									<<std::endl;*/
 			}
 			else {
 				double tmpc;
@@ -3028,7 +3028,7 @@ namespace graphlab {
 					thro_now = total_active_vertices/(k*total_active_vertices+c)/rmi.numprocs();
 				}
 				else thro_now = thro;
-
+/*
 				if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ": -s"<<iteration_counter<<"-"
 									//<<" last "<<last_iter_time
@@ -3043,7 +3043,7 @@ namespace graphlab {
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
 									<<" timeat "<<globaltimer.current_time_millis()/1000
-									<<std::endl;
+									<<std::endl;*/
 				total_act=total_active_vertices;
 			}
 			last_iter_time = this_iter_time;
@@ -3090,7 +3090,9 @@ namespace graphlab {
 					break;
 				}
 			}\
-			else if((avg_inc_rate<0)&&(thro_now*rate_AvsS<=thro_A)){
+			else if((avg_inc_rate<0)&&(
+				(thro_now*rate_AvsS<=thro_A)||(thro*rate_AvsS<=thro_A)
+			)){
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 						<<" ,nor_s_thro "<<thro_now
