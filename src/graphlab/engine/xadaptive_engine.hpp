@@ -1869,7 +1869,7 @@ namespace graphlab {
 								<<std::endl;
 						*/
 					  if(running_mode==X_ADAPTIVE){
-						  double comparable = thro_A*durtime/rate_AvsS;
+						  //double comparable = thro_A*durtime/rate_AvsS;
 						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
 						  {
 						  	  count++;
@@ -1882,6 +1882,7 @@ namespace graphlab {
 							  		<<avg_inc_rate
 									<<" ,lastadd "<<lastadd
 									<<" ,executed "<<tmpexec-lastexecuted
+									<<" ,iter "<<iteration_counter
 									<<std::endl;
 							  countoverhead = globaltimer.current_time_millis();
 							  // put everyone in switch mode
