@@ -3063,7 +3063,7 @@ namespace graphlab {
 				//if(now-lasttime>2000){
 					//double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
 					if (rmi.procid() == 0 )
-						logstream(LOG_EMPH)<< rmi.procid() << ": thro "<< thro
+						logstream(LOG_EMPH)<< rmi.procid() << "-"<<iteration_counter<<": thro "<< thro<<" ,active "<<lastactive
 							<<" ,time "<<(now-lasttime)
 							<<" ,nowtime "<<globaltimer.current_time_millis()
 							<<std::endl;
