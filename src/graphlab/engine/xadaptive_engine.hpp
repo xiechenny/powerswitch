@@ -3077,6 +3077,7 @@ namespace graphlab {
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter//<<" ,fac "<<fac
 							<<" ,tol_active "<<total_active_vertices//<<" X_S_Increase_Rate "<<X_S_Increase_Rate
 							<<" ,avg_inc "<<avg_inc_rate
+							<<" ,nor_s_thro "<<thro_now<<" "<<thro
 							<<" ,timeat "<<globaltimer.current_time_millis()/1000
 							<<rmi.numprocs()<<std::endl;
 
