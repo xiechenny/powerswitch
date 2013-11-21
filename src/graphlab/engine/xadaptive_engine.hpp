@@ -3060,16 +3060,16 @@ namespace graphlab {
 			if(running_mode==X_SAMPLE)
 			{
 				double now = globaltimer.current_time_millis();
-				if(now-lasttime>2000){
-					double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
+				//if(now-lasttime>2000){
+					//double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
 					if (rmi.procid() == 0 )
-						logstream(LOG_EMPH)<< rmi.procid() << ": thro "<< thros
+						logstream(LOG_EMPH)<< rmi.procid() << ": thro "<< thro
 							<<" ,time "<<(now-lasttime)
 							<<" ,nowtime "<<globaltimer.current_time_millis()
 							<<std::endl;
 					total_act=total_active_vertices;
 					lasttime = globaltimer.current_time_millis();
-				}
+				//}
 			}
 			else if(running_mode==X_MANUAL){
 				if(iteration_counter>=switch_iter){
