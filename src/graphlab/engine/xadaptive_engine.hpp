@@ -1800,16 +1800,17 @@ namespace graphlab {
 	  
 			  //xie insert
 			  if(threadid%3001==0){
-			  	if(running_mode==X_SAMPLE){
+			  	if((running_mode==X_SAMPLE)||(running_mode==X_S_ADAPTIVE)){
 				  	double nowtime = globaltimer.current_time_millis()-lastsampled;
-					if(nowtime>T_SAMPLE)
+					if(nowtime>500)
 					{
 						throughput = (programs_executed.value-lastexecuted)/nowtime;
 						//stop_async = true;
-						//if(rmi.procid()==0)
+						/*if(rmi.procid()==0)
 						  	logstream(LOG_INFO)<< rmi.procid()
 						  	<< ": -------thro_a--------- "<<throughput
 						  	<<" at "<<globaltimer.current_time_millis()/1000<<std::endl;
+						*/
 						avgthroughput+=throughput;
 						avgcount++;
 						lastexecuted = programs_executed.value;
@@ -1823,7 +1824,7 @@ namespace graphlab {
 						}
 					}
 				}
-				else if(running_mode==X_S_ADAPTIVE){
+				/*else if(running_mode==X_S_ADAPTIVE){
 					size_t tmpexec = programs_executed.value;
 					if(tmpexec>tasknum)
 					{
@@ -1834,7 +1835,7 @@ namespace graphlab {
 						stop_async = true;
 						first_time_start = false;
 					}
-				}
+				}*/
 				else {
 				  double avg_inc_rate = 0;
 				  double durtime = globaltimer.current_time_millis()-lastsampled;
