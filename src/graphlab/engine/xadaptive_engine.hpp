@@ -2060,7 +2060,7 @@ namespace graphlab {
 			else if(stop_async){
 			  if(running_mode==X_S_ADAPTIVE){
 			  		double local_thro = avgthroughput;
-					size_t local_count = avgcount
+					size_t local_count = avgcount;
 			  		//if(local_count>0)
 				  	//	local_thro = avgthroughput/avgcount;
 			  		rmi.all_reduce(local_thro);
