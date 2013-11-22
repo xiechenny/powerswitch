@@ -3024,8 +3024,8 @@ namespace graphlab {
 					}
 
 					if((tmpk>0)){
-						k = (k*2+tmpk)/3;
-						c = (c*2+tmpc)/3;
+						k = (k*1+tmpk*2)/3;
+						c = (c*1+tmpc*2)/3;
 					}
 					thro_now = total_active_vertices/(k*total_active_vertices+c)/rmi.numprocs();
 				}
@@ -3063,7 +3063,7 @@ namespace graphlab {
 				//if(now-lasttime>2000){
 					//double thros = (total_act-total_active_vertices)/(now-lasttime)/rmi.numprocs();
 					if (rmi.procid() == 0 )
-						logstream(LOG_EMPH)<< rmi.procid() << "-"<<iteration_counter<<": thro "<< thro<<" ,active "<<lastactive
+						logstream(LOG_EMPH)<< rmi.procid() << "-"<<iteration_counter<<": thro "<< thro<<" , thro_s "<<thro_now
 							<<" ,time "<<(now-lasttime)
 							<<" ,nowtime "<<globaltimer.current_time_millis()
 							<<std::endl;
