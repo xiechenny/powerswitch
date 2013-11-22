@@ -857,7 +857,7 @@ namespace graphlab {
 			  else if(opt == "a_thro"){
 			  	  opts.get_engine_args().get_option("a_thro", thro_A);
 				  if(running_mode == X_ADAPTIVE)
-				  	  thro_A = thro_A*0.95;
+				  	  thro_A = thro_A*0.9;
 				  if (rmi.procid() == 0)
 					  logstream(LOG_EMPH) << "Engine Option: set ASYNC throughput: "<< thro_A << std::endl;
 			  	
@@ -1872,7 +1872,7 @@ namespace graphlab {
 						*/
 					  if(running_mode==X_ADAPTIVE){
 						  //double comparable = thro_A*durtime/rate_AvsS;
-						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime)))
+						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime*1.1)))
 						  {
 						  	  count++;
 							  if(count>1){
