@@ -856,6 +856,8 @@ namespace graphlab {
 			  }
 			  else if(opt == "a_thro"){
 			  	  opts.get_engine_args().get_option("a_thro", thro_A);
+				  if(running_mode == X_ADAPTIVE)
+				  	  thro_A = thro_A*0.95;
 				  if (rmi.procid() == 0)
 					  logstream(LOG_EMPH) << "Engine Option: set ASYNC throughput: "<< thro_A << std::endl;
 			  	
@@ -2877,6 +2879,8 @@ namespace graphlab {
 	  double lasttime=timelast;
 	  double k = 0;
 	  double c = -1;
+      double threshold = rate_AvsS*0.95;
+	
 	  
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
@@ -2987,22 +2991,6 @@ namespace graphlab {
 				c = 0;
 				k = this_iter_time/lastactive;
 				thro_now = thro;
-
-				/*if (rmi.procid() == 0 )
-					logstream(LOG_EMPH)<< rmi.procid() << ": -sample-"<<iteration_counter<<"-"
-									//<<" last "<<last_iter_time
-									<<" this "<<this_iter_time
-									//<<" llasta "<<prelastactive
-									<<" lasta "<<lastactive
-									//<<" thisa "<<total_active_vertices
-									//<<" tk "<<"-"
-									//<<" tc "<<"-"
-									<<" k "<<k
-									<<" c "<<c
-									<<" l_thro "<<thro
-									<<" p_thro "<<thro_now
-									<<" timeat "<<globaltimer.current_time_millis()/1000
-									<<std::endl;*/
 			}
 			else {
 				double tmpc;
@@ -3094,7 +3082,7 @@ namespace graphlab {
 				}
 			}\
 			else if((avg_inc_rate<0)&&(
-				(thro_now*rate_AvsS<=thro_A)||(thro*rate_AvsS<=thro_A)
+				(thro_now*rate_AvsS<=threshold)/*||(thro*(rate_AvsS+0.05)<=thro_A)*/
 			)){
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
