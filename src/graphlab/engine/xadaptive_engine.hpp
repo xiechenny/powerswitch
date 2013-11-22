@@ -3082,7 +3082,7 @@ namespace graphlab {
 				}
 			}\
 			else if((avg_inc_rate<0)&&(
-				(thro_now*rate_AvsS<=threshold)/*||(thro*(rate_AvsS+0.05)<=thro_A)*/
+				(thro_now*threshold<thro_A)/*||(thro*(rate_AvsS+0.05)<=thro_A)*/
 			)){
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
