@@ -1872,7 +1872,7 @@ namespace graphlab {
 						*/
 					  if(running_mode==X_ADAPTIVE){
 						  //double comparable = thro_A*durtime/rate_AvsS;
-						  if((avg_inc_rate>0)&&(lastadd>(thro_A*durtime*1.1)))
+						  if((avg_inc_rate>0)&&(iteration_counter>3)&&(lastadd>(thro_A*durtime*1.1)))
 						  {
 						  	  count++;
 							  if(count>1){
@@ -2059,10 +2059,14 @@ namespace graphlab {
 			//if need to activate next mode
 			else if(stop_async){
 			  if(running_mode==X_S_ADAPTIVE){
-				  	double local_thro = avgthroughput/avgcount;
+			  		double local_thro = avgthroughput;
+					size_t local_count = avgcount
+			  		//if(local_count>0)
+				  	//	local_thro = avgthroughput/avgcount;
 			  		rmi.all_reduce(local_thro);
+					rmi.all_reduce(local_count);
 				  	running_mode = X_ADAPTIVE;
-					thro_A = (local_thro/rmi.numprocs());
+					thro_A = (local_thro/local_count);
 					if(rmi.procid()==0)
 						logstream(LOG_INFO)<< "Get async thro now: "<<thro_A<<std::endl;
 			  }
