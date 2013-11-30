@@ -850,7 +850,7 @@ namespace graphlab {
 			  }
 			  else if(opt == "a_tasknum"){
 				  opts.get_engine_args().get_option("a_tasknum", tasknum);
-				  tasknum = tasknum*10000;
+				  tasknum = tasknum*1000;
 				  if (rmi.procid() == 0)
 					  logstream(LOG_EMPH) << "Engine Option: set ASYNC run tasknum: "<< tasknum << std::endl;
 			  }
@@ -1739,7 +1739,8 @@ namespace graphlab {
 			float last_aggregator_check = timer::approx_time_seconds();
 			timer ti; ti.start();
 	  
-		  
+		    //temporarily only choose the user threads 0 as the monitor
+		    //turn down the threshold, the monitor frequency will increase.
 			if((threadid%3001==0)){
 				iteration_counter = 0;
 				for(int i=0; i<11;i++){
@@ -1815,15 +1816,16 @@ namespace graphlab {
 						*/
 						avgthroughput+=throughput;
 						avgcount++;
-						lastexecuted = programs_executed.value;
-						lastsampled = globaltimer.current_time_millis();
-
+		
 						if(programs_executed.value>tasknum){
 							stop_async = true;
 							first_time_start = false;
-							for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
-								  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
+							//for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
+							//	  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 						}
+						
+						lastexecuted = programs_executed.value;
+						lastsampled = globaltimer.current_time_millis();
 					}
 				}
 				/*else if(running_mode==X_S_ADAPTIVE){
@@ -2042,19 +2044,6 @@ namespace graphlab {
 					<<" #e/#n "<<(graph.num_edges()*1.0/graph.num_vertices())
 					<<" r "<<(graph.num_replicas()*1.0/graph.num_vertices())
 					<<std::endl;
-			  		/*<<" tm "<<tm
-					<<" tc "<<tc
-					<<" ts "<<ts
-					<<std::endl
-					<<" tmc "<<tmc
-					<<" tcc "<<tcc
-					<<" tsc "<<tsc
-					<<std::endl
-			  		<<" tm_avg "<<tm/tmc
-					<<" tc_avg "<<tc/tcc
-					<<" ts_avg "<<ts/tsc
-					<<" tall "<<tall/tallc
-					<<std::endl;*/
 			}
 			//if need to activate next mode
 			else if(stop_async){
@@ -2526,6 +2515,7 @@ namespace graphlab {
 	T_SAMPLE = 1000;
 	rate_AvsS=0.75;
 	endgame_mode = true;
+	tasknum = 5000;
 
 	//xie insert : set sync & async opts
 	xset_options(opts);

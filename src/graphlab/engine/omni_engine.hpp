@@ -198,8 +198,8 @@ namespace graphlab {
       } else if(engine_type == "async" || engine_type == "asynchronous") {
         logstream(LOG_INFO) << "Using the Asynchronous engine." << std::endl;
         engine_ptr = new async_consistent_engine_type(dc, graph, new_options);
-      } else if(engine_type == "xasync" || engine_type == "xasynchronous"){
-		logstream(LOG_INFO) << "Using the X-adaptive engine." << std::endl;
+      } else if(engine_type == "msync" || engine_type == "xsync"){
+		logstream(LOG_INFO) << "Using the Mix-adaptive engine." << std::endl;
         engine_ptr = new xadaptive_engine_type(dc, graph, new_options);
 	  }
 	  else {
