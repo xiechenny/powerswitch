@@ -3743,6 +3743,8 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   recv_gathers(const bool try_to_recv) {
+  	double timercountstart  = globaltimer.current_time_millis();
+	
     procid_t procid(-1);
     typename gather_exchange_type::buffer_type buffer;
     while(gather_exchange.recv(procid, buffer, try_to_recv)) {
@@ -3759,7 +3761,8 @@ namespace graphlab {
         }
         vlocks[lvid].unlock();
       }
-    }
+    }	
+	itercompute +=(globaltimer.current_time_millis()-timercountstart);
   } // end of recv_gather
 
 
