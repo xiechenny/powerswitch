@@ -3303,7 +3303,7 @@ namespace graphlab {
       }
     } // end of loop over vertices to send messages
 
-	itercompute +=(uint_64)(globaltimer.current_time_millis()-timercountstart);
+	itercompute +=(globaltimer.current_time_millis()-timercountstart)/1;
 			
     message_exchange.partial_flush(thread_id);
     // Finish sending and receiving all messages
