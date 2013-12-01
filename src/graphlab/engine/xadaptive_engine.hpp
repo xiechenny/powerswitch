@@ -619,6 +619,7 @@ namespace graphlab {
 		  size_t tsc;
 		  size_t tcc;
 		  size_t tallc;
+		  double itercompute;
 		  
 		  
 		  /**
@@ -2874,7 +2875,7 @@ namespace graphlab {
 	  double k = 0;
 	  double c = -1;
       double threshold = 0.9;
-	
+	  itercompute = 0;
 	  
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
@@ -2906,6 +2907,7 @@ namespace graphlab {
 		// Exchange Messages --------------------------------------------------
 		// Exchange any messages in the local message vectors
 		// if (rmi.procid() == 0) std::cout << "Exchange messages..." << std::endl;
+
 		run_synchronous( &xadaptive_engine::exchange_messages );
 		/**
 		 * Post conditions:
@@ -3268,6 +3270,8 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   exchange_messages(const size_t thread_id) {
+	double timercountstart  = globaltimer.current_time_millis();
+	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
     const size_t TRY_RECV_MOD = 100;
@@ -3298,6 +3302,10 @@ namespace graphlab {
         if(++vcount % TRY_RECV_MOD == 0) recv_messages(TRY_TO_RECV);
       }
     } // end of loop over vertices to send messages
+
+	if (rmi.procid() == 0)
+		logstream(LOG_EMPH) << "thread "<<(globaltimer.current_time_millis()-timercountstart)<<std::endl;
+			
     message_exchange.partial_flush(thread_id);
     // Finish sending and receiving all messages
     thread_barrier.wait();
