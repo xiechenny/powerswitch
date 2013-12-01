@@ -3096,6 +3096,7 @@ namespace graphlab {
 			}
 		}
 		timelast = globaltimer.current_time_millis();
+		itercompute = 0;
 
 		
 		
