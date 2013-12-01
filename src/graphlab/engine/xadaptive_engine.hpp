@@ -619,7 +619,7 @@ namespace graphlab {
 		  size_t tsc;
 		  size_t tcc;
 		  size_t tallc;
-		  double itercompute;
+		  atomic<uint64_t> itercompute;
 		  
 		  
 		  /**
@@ -3014,13 +3014,13 @@ namespace graphlab {
 					thro_now = total_active_vertices/(k*total_active_vertices+c)/rmi.numprocs();
 				}
 				else thro_now = thro;
-/*
+
 				if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ": -s"<<iteration_counter<<"-"
-									//<<" last "<<last_iter_time
+									<<" itercompute "<<itercompute
 									<<" this "<<this_iter_time
 									//<<" llasta "<<prelastactive
-									<<" lasta "<<lastactive
+									/*<<" lasta "<<lastactive
 									<<" thisa "<<total_active_vertices
 									<<" tk "<<tmpk
 									<<" tc "<<tmpc
@@ -3028,8 +3028,8 @@ namespace graphlab {
 									<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
-									<<" timeat "<<globaltimer.current_time_millis()/1000
-									<<std::endl;*/
+									<<" timeat "<<globaltimer.current_time_millis()/1000*/
+									<<std::endl;
 				total_act=total_active_vertices;
 			}
 			last_iter_time = this_iter_time;
@@ -3303,8 +3303,7 @@ namespace graphlab {
       }
     } // end of loop over vertices to send messages
 
-	if (rmi.procid() == 0)
-		logstream(LOG_EMPH) << "thread "<<(globaltimer.current_time_millis()-timercountstart)<<std::endl;
+	itercompute +=(uint_64)(globaltimer.current_time_millis()-timercountstart);
 			
     message_exchange.partial_flush(thread_id);
     // Finish sending and receiving all messages
