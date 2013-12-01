@@ -2873,7 +2873,7 @@ namespace graphlab {
 	  double lasttime=timelast;
 	  double k = 0;
 	  double c = -1;
-      double threshold = rate_AvsS*1.1;
+      double threshold = 0.9;
 	
 	  
 	  // Program Main loop ====================================================
@@ -3073,7 +3073,7 @@ namespace graphlab {
 				}
 			}\
 			else if((avg_inc_rate<0)&&(
-				(thro_now*threshold<thro_A)/*||(thro*(rate_AvsS+0.05)<=thro_A)*/
+				(thro_now*rate_AvsS<thro_A*threshold)/*||(thro*(rate_AvsS+0.05)<=thro_A)*/
 			)){
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
@@ -3091,7 +3091,6 @@ namespace graphlab {
 					
 					termination_reason = execution_status::MODE_SWITCH;
 					break;
-				
 			}
 		}
 		timelast = globaltimer.current_time_millis();
