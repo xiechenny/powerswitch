@@ -2873,7 +2873,7 @@ namespace graphlab {
 	  double lasttime=timelast;
 	  double k = 0;
 	  double c = -1;
-      double threshold = rate_AvsS*0.95;
+      double threshold = rate_AvsS*1.1;
 	
 	  
 	  // Program Main loop ====================================================
@@ -3032,10 +3032,7 @@ namespace graphlab {
 			}
 			last_iter_time = this_iter_time;
 			total_act+=total_active_vertices;
-			//double nowt = globaltimer.current_time_millis();
-			//if(nowt-lasttime>1000){
-				//double thros = (total_act-total_active_vertices)/(nowt-lasttime)/rmi.numprocs();
-			//}
+			
 			prelastactive = lastactive;	
 			lastactive = total_active_vertices;
 			
