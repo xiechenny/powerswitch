@@ -3765,7 +3765,7 @@ namespace graphlab {
         vlocks[lvid].unlock();
       }
     }	
-	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+	//itercompute +=(globaltimer.current_time_millis()-timercountstart);
   } // end of recv_gather
 
 
