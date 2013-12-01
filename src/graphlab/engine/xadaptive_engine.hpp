@@ -3023,6 +3023,7 @@ namespace graphlab {
 									<<" itercompute "<<itercompute
 									<<" this "<<this_iter_time
 									<<" diff "<<this_iter_time-itercompute
+									<<" c "<<c
 									//<<" llasta "<<prelastactive
 									/*<<" lasta "<<lastactive
 									<<" thisa "<<total_active_vertices
