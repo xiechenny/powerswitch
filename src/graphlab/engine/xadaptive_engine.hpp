@@ -3018,14 +3018,14 @@ namespace graphlab {
 				}
 				else thro_now = thro;
 
-				if (rmi.procid() == 0 )
+				/*if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ": -s"<<iteration_counter<<"-"
 									<<" itercompute "<<itercompute
 									<<" this "<<this_iter_time
 									<<" diff "<<this_iter_time-itercompute
 									<<" c "<<c
 									//<<" llasta "<<prelastactive
-									/*<<" lasta "<<lastactive
+									<<" lasta "<<lastactive
 									<<" thisa "<<total_active_vertices
 									<<" tk "<<tmpk
 									<<" tc "<<tmpc
