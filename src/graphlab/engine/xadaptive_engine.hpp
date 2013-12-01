@@ -3303,7 +3303,7 @@ namespace graphlab {
       }
     } // end of loop over vertices to send messages
 
-	itercompute +=(globaltimer.current_time_millis()-timercountstart)/1;
+	itercompute +=(globaltimer.current_time_millis()-timercountstart);
 			
     message_exchange.partial_flush(thread_id);
     // Finish sending and receiving all messages
@@ -3318,6 +3318,8 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   receive_messages(const size_t thread_id) {
+  	double timercountstart  = globaltimer.current_time_millis();
+	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
     const size_t TRY_RECV_MOD = 100;
@@ -3371,6 +3373,8 @@ namespace graphlab {
       }
     }
 
+	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+
     num_active_vertices += nactive_inc;
 	//xie insert
 	num_active_mirrors += nactive_mirrors;
@@ -3392,6 +3396,8 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   execute_gathers(const size_t thread_id) {
+  	double timercountstart  = globaltimer.current_time_millis();
+	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
     const size_t TRY_RECV_MOD = 1000;
@@ -3484,6 +3490,9 @@ namespace graphlab {
         if(++vcount % TRY_RECV_MOD == 0) recv_gathers(TRY_TO_RECV);
       }
     } // end of loop over vertices to compute gather accumulators
+    
+	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+	
     per_thread_compute_time[thread_id] += ti.current_time();
     gather_exchange.partial_flush(thread_id);
       // Finish sending and receiving all gather operations
@@ -3497,6 +3506,8 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   execute_applys(const size_t thread_id) {
+  	double timercountstart  = globaltimer.current_time_millis();
+	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
     const size_t TRY_RECV_MOD = 1000;
@@ -3555,6 +3566,8 @@ namespace graphlab {
       }
     } // end of loop over vertices to run apply
 
+	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+
     per_thread_compute_time[thread_id] += ti.current_time();
     vprog_exchange.partial_flush(thread_id);
     vdata_exchange.partial_flush(thread_id);
@@ -3573,6 +3586,8 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   execute_scatters(const size_t thread_id) {
+  	double timercountstart  = globaltimer.current_time_millis();
+	
     context_type context(*this, graph);
     timer ti;
     fixed_dense_bitset<8 * sizeof(size_t)> local_bitset; // allocate a word size = 64 bits
@@ -3631,6 +3646,8 @@ namespace graphlab {
         vertex_programs[lvid] = vertex_program_type();
       } // end of if active on this minor step
     } // end of loop over vertices to complete scatter operation
+    
+	itercompute +=(globaltimer.current_time_millis()-timercountstart);
 
 	//xie insert
 	each_iteration_signal += local_signal;
