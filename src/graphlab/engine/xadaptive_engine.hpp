@@ -3075,14 +3075,14 @@ namespace graphlab {
 				}
 			}\
 			else if((avg_inc_rate<0)&&(
-				(thro_now*rate_AvsS<thro_A*threshold)/*||(thro*(rate_AvsS+0.05)<=thro_A)*/
+				(thro_now*rate_AvsS<thro_A*threshold)
 			)){
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
 						<<" ,nor_s_thro "<<thro_now
 						<<" ,thro_A "<<thro_A
 						<<" ,act "<<total_active_vertices	
-						<<" ,avg_inc "<<avg_inc_rate
+						<<" ,thro "<< thro
 						<<std::endl;					
 					countoverhead = globaltimer.current_time_millis();
 
