@@ -2981,7 +2981,10 @@ namespace graphlab {
 			avg_line[now] = avg_line[(iteration_counter+10)%11]+(active[now]-active[(iteration_counter-X_S_Sampled_Iters+11)%11])/X_S_Sampled_Iters;
 			avg_inc_rate = avg_line[now]-avg_line[(iteration_counter+10)%11];
 				
-			double this_iter_time = globaltimer.current_time_millis()-timelast;
+			double this_iter_time = globaltimer.current_time_millis()-timelast;				
+			rmi.all_reduce(this_iter_time);
+			this_iter_time = this_iter_time/rmi.numprocs();
+
 			double thro = lastactive/this_iter_time/rmi.numprocs();
 			if(c<0){
 				c = 0;
