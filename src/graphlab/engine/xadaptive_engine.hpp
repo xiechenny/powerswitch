@@ -3019,6 +3019,7 @@ namespace graphlab {
 				logstream(LOG_EMPH)<< rmi.procid() << ": -s"<<iteration_counter<<"-"
 									<<" itercompute "<<itercompute
 									<<" this "<<this_iter_time
+									<<" diff "<<this_iter_time-itercompute
 									//<<" llasta "<<prelastactive
 									/*<<" lasta "<<lastactive
 									<<" thisa "<<total_active_vertices
@@ -3779,6 +3780,7 @@ namespace graphlab {
   recv_messages(const bool try_to_recv) {
 	//xie insert
 	size_t local_msgs = 0;
+	double timercountstart  = globaltimer.current_time_millis();
 	
     procid_t procid(-1);
     typename message_exchange_type::buffer_type buffer;
@@ -3800,6 +3802,7 @@ namespace graphlab {
         vlocks[lvid].unlock();
       }
     }
+	itercompute +=(globaltimer.current_time_millis()-timercountstart);
 
 	each_iteration_nmsg += local_msgs;
   } 
