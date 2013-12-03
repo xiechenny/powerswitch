@@ -2125,9 +2125,8 @@ namespace graphlab {
       rpc.full_barrier();
     } // end of load random powerlaw
 
-	void load_random_graph(size_t knverts, size_t truncate = (size_t)(-1)) {
+	void load_random_graph(size_t knverts, size_t nverts = (size_t)(200000)) {
 		  rpc.full_barrier();
-		  size_t nverts = 500000;
 		  size_t nedges = nverts/rpc.numprocs();
 		  size_t total_e = knverts*nedges;
 		  

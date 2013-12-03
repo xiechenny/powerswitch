@@ -3033,8 +3033,8 @@ namespace graphlab {
 									<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
-									<<" timeat "<<globaltimer.current_time_millis()/1000*/
-									<<std::endl;
+									<<" timeat "<<globaltimer.current_time_millis()/1000
+									<<std::endl;*/
 				total_act=total_active_vertices;
 			}
 			last_iter_time = this_iter_time;
