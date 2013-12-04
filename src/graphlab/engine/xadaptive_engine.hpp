@@ -1749,7 +1749,8 @@ namespace graphlab {
 				  active[i] = 0;
 				  }
 			}
-			double xstart = globaltimer.current_time_millis();	   
+			double xstart = globaltimer.current_time_millis();	  
+			double threshold = 1.1;
 		    double lastsampled = xstart;
 			double lastexecuted = 0;
 			size_t lastadd = 0;
@@ -1875,7 +1876,7 @@ namespace graphlab {
 						*/
 					  if(running_mode==X_ADAPTIVE){
 						  //double comparable = thro_A*durtime/rate_AvsS;
-						  if((avg_inc_rate>0)&&(iteration_counter>3)&&(lastadd>(thro_A*durtime*1.1)))
+						  if((avg_inc_rate>0)&&(iteration_counter>3)&&(lastadd>(thro_A*threshold*durtime)))
 						  {
 						  	  count++;
 							  if(count>1){

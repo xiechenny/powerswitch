@@ -1,6 +1,20 @@
-Graphlab
+PowerSwitch
 ==========
+PowerSwitch project makes the comprehensive characterization on the performance of the two modes on a set of typical graph-parallel applications. Our study shows that the performance of the two modes varies significantly with different graph programs, partitioning methods, execution stages, input graph and cluster scales and no single mode consistently outperforms the other. This project proposes Msync, a hybrid graph computation mode that adaptively switches a graph-parallel program between the two modes for optimal performance. Msync constantly collects execution statistics on-the-fly and leverages a set of heuristics to predict future performance and determine when a mode switch could be profitable. We have built both an online sampling and an offline neural-network approaches to allow accurate prediction of future execution performance. PowerSwitch has been built based on PowerGraph, a state-of-the-art graph-parallel systems, to support Msync execution of graph applications. On a 48-node EC-like cluster, PowerSwitch consistently outperforms the best of both modes, with a speedup ranging from 6% to 73% due to accurate switching between two modes.
 
+It is implemented base on Graphlab framework. You can find instructions for installing and building it as follows:
+
+
+Quick Start
+-------
+1. Set up the graphlab framework
+2. Refer to the homepage to configure the msync engine of PowerSwtich. 
+http://ipads.se.sjtu.edu.cn/projects/powerswitch.html
+
+
+
+The configuration of underlying Graphlab
+==========
 
 License
 -------
