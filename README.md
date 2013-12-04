@@ -14,7 +14,7 @@ http://ipads.se.sjtu.edu.cn/projects/powerswitch.html
 
 
 The configuration of underlying Graphlab
-==========
+------
 
 License
 -------
