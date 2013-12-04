@@ -2125,6 +2125,10 @@ namespace graphlab {
       rpc.full_barrier();
     } // end of load random powerlaw
 
+	void load_synthetic_powerlaw(double alpha = 2.1, size_t nverts = (size_t)(200000)) {
+		load_synthetic_powerlaw(nverts, false, alpha, 100000000);
+	}
+									 
 	void load_random_graph(size_t knverts, size_t nverts = (size_t)(200000)) {
 		  rpc.full_barrier();
 		  size_t nedges = nverts/rpc.numprocs();

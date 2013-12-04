@@ -212,11 +212,11 @@ int main(int argc, char** argv) {
                        "The permissible change at convergence.");
   clopts.attach_option("format", format,
                        "The graph file format");
-  size_t powerlaw = 0;
-  clopts.attach_option("powerlaw", powerlaw,
-                       "Generate a synthetic powerlaw out-degree graph. ");
-  double alpha = 2.1;
-  clopts.attach_option("alpha", alpha,
+  //size_t powerlaw = 0;
+  //clopts.attach_option("powerlaw", powerlaw,
+  //                     "Generate a synthetic powerlaw out-degree graph. ");
+  double powerlaw_alpha = 0;
+  clopts.attach_option("powerlaw_alpha", powerlaw_alpha,
                        "Apha for generate a synthetic powerlaw out-degree graph. ");
   size_t randomdegree = 0;
   clopts.attach_option("random", randomdegree,
@@ -261,9 +261,9 @@ int main(int argc, char** argv) {
   graph_type graph(dc, clopts);
   graphlab::vertex_set vset = graph.empty_set();	;//xie insert
    
-  if(powerlaw > 0) { // make a synthetic graph
-    dc.cout() << "Loading synthetic Powerlaw graph." << std::endl;
-    graph.load_synthetic_powerlaw(powerlaw, false, alpha, 100000000);
+  if(powerlaw_alpha > 0) { // make a synthetic graph
+    dc.cout() << "Loading synthetic Powerlaw graph. alpha " << powerlaw_alpha << std::endl;
+    graph.load_synthetic_powerlaw(powerlaw_alpha);
   }
   else if(randomdegree> 0) { // make a random graph
     dc.cout() << "Loading Random graph. #e/#v "<<randomdegree<<"."<< std::endl;
