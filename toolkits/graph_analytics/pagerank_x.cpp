@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
   double alpha = 2.1;
   clopts.attach_option("alpha", alpha,
                        "Apha for generate a synthetic powerlaw out-degree graph. ");
-  size_t randomdegree = 5;
+  size_t randomdegree = 0;
   clopts.attach_option("random", randomdegree,
                        "Generate a random graph with the parametter as average degree.");
   
