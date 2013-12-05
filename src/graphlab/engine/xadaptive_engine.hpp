@@ -863,6 +863,12 @@ namespace graphlab {
 					  logstream(LOG_EMPH) << "Engine Option: set ASYNC throughput: "<< thro_A << std::endl;
 			  	
 			  }
+			  else if(opt == "neuralpath"){
+			  	  std::string neuralpath; 
+			  	  opts.get_engine_args().get_option("neuralpath", neuralpath);
+				  if (rmi.procid() == 0)
+					  logstream(LOG_EMPH) << "Engine Option: set neural network package: "<< neuralpath << std::endl;
+			  }
 			  else if(opt == "rate_AvsS"){
 			  	  opts.get_engine_args().get_option("rate_AvsS", rate_AvsS);
 				  if (rmi.procid() == 0)
