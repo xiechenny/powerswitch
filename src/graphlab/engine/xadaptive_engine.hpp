@@ -2039,10 +2039,12 @@ namespace graphlab {
 			
 	  		if(running_mode==X_SAMPLE){
 			  termination_reason = execution_status::TASK_DEPLETION;
-			  double local_thro = avgthroughput/avgcount;
+			  double local_thro = avgthroughput;
+			  size_t local_count = avgcount;
 			  rmi.all_reduce(local_thro);
+			  rmi.all_reduce(local_count);	
 			  rmi.cout()<<"================ sampled result ============="<<std::endl
-			  		<<"throughput "<<(local_thro/rmi.numprocs())
+			  		<<"throughput "<<(local_thro/local_count)
 					<<" #e/#n "<<(graph.num_edges()*1.0/graph.num_vertices())
 					<<" r "<<(graph.num_replicas()*1.0/graph.num_vertices())
 					<<std::endl;
