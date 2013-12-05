@@ -2499,8 +2499,8 @@ namespace graphlab {
 	scheduler_ptr(NULL), started(false), engine_start_time(timer::approx_time_seconds()), force_stop(false) {
 
 	// xie insert: should set start mode, it decides how to receive the start signal
-	current_engine = X_SYNC;
-	running_mode= X_ADAPTIVE;
+	current_engine = X_ASYNC;
+	running_mode= X_S_ADAPTIVE;
 	has_max_iterations = false;	
 	 
     // Process any additional options
@@ -3202,7 +3202,7 @@ namespace graphlab {
       execution_status::UNSET;
 
 
-	if((running_mode=X_ADAPTIVE)&&(current_engine == X_SYNC)){
+	if((running_mode==X_ADAPTIVE)&&(current_engine == X_SYNC)){
 		if(graph.get_async_thro()-0<0.01){
 			if (rmi.procid() == 0)
 				logstream(LOG_EMPH) 

@@ -283,7 +283,11 @@ int main(int argc, char** argv) {
   graph.finalize();
   
   dc.cout() << "#vertices: " << graph.num_vertices()
-            << " #edges:" << graph.num_edges() << std::endl;
+            << "#edges:" << graph.num_edges() 
+            << "replica factor "<< graph.num_replicas()<< std::endl;
+
+  //graph.set_async_thro();
+  
 
   // Initialize the vertex data
   //xie modify 
