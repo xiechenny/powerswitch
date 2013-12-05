@@ -60,6 +60,7 @@
 #include <graphlab/macros_def.hpp>
 
 //xie insert define
+//#include "mat.h"
 #define X_SYNC 1
 #define X_ASYNC 2
 #define X_MANUAL 3
@@ -1828,8 +1829,8 @@ namespace graphlab {
 						if(programs_executed.value>tasknum){
 							stop_async = true;
 							first_time_start = false;
-							//for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
-							//	  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
+							for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
+								  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 						}
 						
 						lastexecuted = programs_executed.value;
@@ -3199,6 +3200,21 @@ namespace graphlab {
     force_abort = false;
     execution_status::status_enum termination_reason =
       execution_status::UNSET;
+
+
+	if((running_mode=X_ADAPTIVE)&&(current_engine == X_SYNC)){
+		if(graph.get_async_thro()-0<0.01){
+			if (rmi.procid() == 0)
+				logstream(LOG_EMPH) 
+				<< "MSYNC: Prepare to start with sync schedule without more information of async throughput, engine stops. "
+				<<std::endl;
+				return execution_status::FORCED_ABORT;
+		}
+		else thro_A = graph.get_async_thro();
+	}
+	
+
+				
 
 	globaltimer.start();
 	x_start_time_m = globaltimer.current_time_millis();	// start time

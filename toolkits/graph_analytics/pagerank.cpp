@@ -241,8 +241,11 @@ int main(int argc, char** argv) {
   // must call finalize before querying the graph
   graph.finalize();
   dc.cout() << "#vertices: " << graph.num_vertices()
-            << " #edges:" << graph.num_edges() << std::endl;
+            << "#edges:" << graph.num_edges() 
+            << "replica factor "<< graph.num_replicas()<< std::endl;
 
+  //graph.set_async_thro(50);
+  
   // Initialize the vertex data
   graph.transform_vertices(init_vertex);
 

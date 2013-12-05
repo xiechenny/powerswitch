@@ -616,7 +616,7 @@ namespace graphlab {
 #else
       vertex_exchange(dc), 
 #endif
-      vset_exchange(dc), parallel_ingress(true) {
+      vset_exchange(dc), parallel_ingress(true),async_thro(0){
       rpc.barrier();
       set_options(opts);
     }
@@ -2385,8 +2385,12 @@ namespace graphlab {
       } // end of save
     }; // end of vertex_record
 
-
-
+    void set_async_thro(double thro) {
+		async_thro = thro;
+    }
+	double get_async_thro(){
+		return async_thro;
+	}
 
     /** \internal
      * \brief converts a local vertex ID to a local vertex object
@@ -2885,6 +2889,9 @@ namespace graphlab {
 
     /** The global number of vertex replica */
     size_t nreplicas;
+
+	//xie insert
+	double async_thro;
 
     /** pointer to the distributed ingress object*/
     distributed_ingress_base<VertexData, EdgeData>* ingress_ptr;
