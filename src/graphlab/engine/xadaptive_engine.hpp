@@ -557,7 +557,9 @@ namespace graphlab {
 		  //xie insert:  mark the active node in ASYNC engine 
 		  //dense_bitset asy_now_active_v;		  //set in async mode for next SYNC
 		  dense_bitset asy_start_active_v;	  //set in signal of sync mode for next ASYNC
-	  
+
+	  	  std::vector<vertex_data_type> vertex_data;
+		  
 		  //xie insert: count msg
 		  atomic<size_t> each_iteration_nmsg;
 		  atomic<size_t> each_iteration_signal;
@@ -634,8 +636,6 @@ namespace graphlab {
 		   * iteration.
 		   */
 		  atomic<size_t> num_active_vertices;
-		  //xie insert
-		  atomic<size_t> num_active_mirrors;
 		  
 		  /**
 		   * \brief A bit indicating (for all vertices) whether to
@@ -824,7 +824,7 @@ namespace graphlab {
 				opts.get_engine_args().get_option("s_auto", samode);
 				if(samode){
 					running_mode = X_S_ADAPTIVE;
-					current_engine = X_ASYNC;
+					//current_engine = X_ASYNC;
 				  	if (rmi.procid() == 0)
 						logstream(LOG_EMPH) << "Engine Option: set mode X_S_ADAPTIVE"<< std::endl;
 				}	
@@ -1196,7 +1196,7 @@ namespace graphlab {
 		  void xsignal_all(const message_type& message = message_type(),
 						  const std::string& order = "shuffle") {
 			vertex_set vset = graph.complete_set();
-			signal_vset(vset, message, order);
+			xsignal_vset(vset, message, order);
 		  } // end of schedule all
 	  
 		  void xsignal_vset(const vertex_set& vset,
@@ -1252,8 +1252,7 @@ namespace graphlab {
 			  double priority;
 			  xmessages.add(lvid, messages[lvid], &priority);
 			  // xie insert : clear messages
-			  messages[lvid] = message_type();
-			  
+			  messages[lvid] = message_type();		  
 			  scheduler_ptr->schedule(lvid, priority);
 			}
 			rmi.barrier();
@@ -1427,6 +1426,9 @@ namespace graphlab {
 									 vertex_program_type& vprog) {
 			local_vertex_type local_vertex(graph.l_vertex(lvid));
 			vertex_type vertex(local_vertex);
+			//xie insert
+			if(running_mode==X_S_ADAPTIVE)
+				vertex.set_tmpdata(vertex_data[lvid]);
 			context_type context(*this, graph);
 			edge_dir_type scatter_dir = vprog.scatter_edges(context, vertex);
 			if(scatter_dir == IN_EDGES || scatter_dir == ALL_EDGES) {
@@ -1465,7 +1467,10 @@ namespace graphlab {
 			vertex_program_type vprog = vprog_;
 			lvid_type lvid = graph.local_vid(vid);
 			vertexlocks[lvid].lock();
-			graph.l_vertex(lvid).data() = newdata;
+			if(running_mode==X_S_ADAPTIVE)
+				vertex_data[lvid] = newdata;
+			else	
+				graph.l_vertex(lvid).data() = newdata;
 			vertexlocks[lvid].unlock();
 			xperform_scatter_local(lvid, vprog);
 		  }
@@ -1569,6 +1574,8 @@ namespace graphlab {
 			vertex_program_type vprog = vertex_program_type();
 			local_vertex_type local_vertex(graph.l_vertex(lvid));
 			vertex_type vertex(local_vertex);
+			if(running_mode==X_S_ADAPTIVE)
+				vertex.set_tmpdata(vertex_data[lvid]);
 	  
 			/**************************************************************************/
 			/*								 init phase 							  */
@@ -1611,8 +1618,8 @@ namespace graphlab {
 		   //const vertex_data_type predata = local_vertex.data();
 		   //double atimer = globaltimer.current_time_millis();	
 		   
-		   vertexlocks[lvid].lock();
-		   vprog.apply(context, vertex, gather_result.value);	   
+		   vertexlocks[lvid].lock(); 				
+		   vprog.apply(context, vertex, gather_result.value);
 		   vertexlocks[lvid].unlock();
 		   
 	 	   /*if(fiber_control::get_worker_id()==0){
@@ -1656,6 +1663,15 @@ namespace graphlab {
 		   {
 			   std::vector<request_future<void> > scatter_futures;
 			   foreach(procid_t mirror, local_vertex.mirrors()) {
+			   	 if(running_mode==X_S_ADAPTIVE)
+				 	 scatter_futures.push_back(
+					 object_fiber_remote_request(rmi, 
+												 mirror, 
+												 &xadaptive_engine::xperform_scatter, 
+												 vid,
+												 vprog,
+												 vertex_data[lvid]));
+				 else
 				 scatter_futures.push_back(
 					 object_fiber_remote_request(rmi, 
 												 mirror, 
@@ -1665,10 +1681,6 @@ namespace graphlab {
 												 local_vertex.data()));
 			   }
 			   xperform_scatter_local(lvid, vprog);
-			   /*if(fiber_control::get_worker_id()==0){
-		   			ts += (globaltimer.current_time_millis()-stimer);
-					tsc++;
-		   		}*/ 
 			   
 			   for(size_t i = 0;i < scatter_futures.size(); ++i) 
 				 scatter_futures[i]();
@@ -1828,7 +1840,7 @@ namespace graphlab {
 		
 						if(programs_executed.value>tasknum){
 							stop_async = true;
-							first_time_start = false;
+							//first_time_start = false;
 							for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
 								  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 						}
@@ -2070,6 +2082,7 @@ namespace graphlab {
 					if(rmi.procid()==0)
 						logstream(LOG_INFO)<< "Get async thro now: "<<thro_A<<std::endl;
 			  }
+			  else termination_reason = execution_status::MODE_SWITCH;
 			  rmi.full_barrier();
 			  {	 
 				  if(rmi.procid()==0)
@@ -2078,8 +2091,7 @@ namespace graphlab {
 				  <<std::endl;
 				  
 				  //messages should be sent into next mode then clear
-				  next_mode_active_vertex = xmessages.active_v;
-				  termination_reason = execution_status::MODE_SWITCH;
+				  //next_mode_active_vertex = xmessages.active_v;
 			  }
 			}
 		    //xie insert: end of local switch range
@@ -2499,7 +2511,7 @@ namespace graphlab {
 	scheduler_ptr(NULL), started(false), engine_start_time(timer::approx_time_seconds()), force_stop(false) {
 
 	// xie insert: should set start mode, it decides how to receive the start signal
-	current_engine = X_ASYNC;
+	current_engine = X_SYNC;
 	running_mode= X_S_ADAPTIVE;
 	has_max_iterations = false;	
 	 
@@ -2508,14 +2520,12 @@ namespace graphlab {
     per_thread_compute_time.resize(opts.get_ncpus());
     use_cache = false;
 
-	//xie insert set async engine
+	//xie insert set msync engine
 	nfibers = 3000;
     stacksize = 16384;
     factorized_consistency = true;
     timed_termination = (size_t)(-1);
     termination_reason = execution_status::UNSET;
-	X_A_Threshold_low = 500000000;//0.01;
-	X_A_Threshold_hig = 500000000;//0.015;
 	X_S_Min_Iters = 5;
 	X_S_Increase_Rate = -(0.00001);
 	X_S_Sampled_Iters = 10;
@@ -2591,6 +2601,8 @@ namespace graphlab {
     // Allocate vertex locks and vertex programs
     vlocks.resize(graph.num_local_vertices());
     vertex_programs.resize(graph.num_local_vertices());
+	vertex_data.resize(graph.num_local_vertices());	//xie insert
+	
     // allocate the edge locks
     //elocks.resize(graph.num_local_edges());
     // Allocate messages and message bitset
@@ -2654,6 +2666,7 @@ namespace graphlab {
 	      resize();
 	    rmi.barrier();
 	    internal_signal_rpc(gvid, message);
+		xinternal_signal_gvid(gvid, message);
 	    rmi.barrier();
   	}
 	// xie insert ASYNC
@@ -2676,6 +2689,7 @@ namespace graphlab {
 	        internal_signal(vertex_type(graph.l_vertex(lvid)), message);
 	      }
 	    }
+		xsignal_all(message, order);
 	}
 	// xie insert: ASYNC
 	else{
@@ -2697,6 +2711,7 @@ namespace graphlab {
 	        internal_signal(vertex_type(graph.l_vertex(lvid)), message);
 	      }
 	    }
+		xsignal_vset(vset, message, order);
     }
 	// xie insert: ASYNC
 	else {
@@ -2739,6 +2754,7 @@ namespace graphlab {
 
 			//xie insert;
 			asy_start_active_v.set_bit(lvid);
+			vertex_data[lvid] = vertex.data();
 		}
 		vlocks[lvid].unlock();
     	}
@@ -2854,8 +2870,14 @@ namespace graphlab {
 	  else{
 	  	//signal 
 	  	s_inner_signal_vset();
-		xmessages.clear();
-	  	}
+		//xmessages.clear();
+	  }
+	  
+	  if (rmi.procid() == 0) {
+		logstream(LOG_EMPH) << rmi.procid()<<": Iteration counter will only output every 5 seconds. Switch overhead "
+						  << (globaltimer.current_time_millis() -countoverhead) << std::endl;
+	  }
+	  
 	  xmessages.clear();
 
 	  float start_this_turn;		// used for set least execution time
@@ -2871,11 +2893,6 @@ namespace graphlab {
 	  }*/
   
 	  float last_print = -5;
-	  if (rmi.procid() == 0) {
-		logstream(LOG_EMPH) << rmi.procid()<<": Iteration counter will only output every 5 seconds. Switch overhead "
-						  << (globaltimer.current_time_millis() -countoverhead) << std::endl;
-	  }
-
 
 	  double timelast = globaltimer.current_time_millis();
 	  size_t lastactive = 0;
@@ -2884,7 +2901,8 @@ namespace graphlab {
 	  double lasttime=timelast;
 	  double k = 0;
 	  double c = -1;
-      double threshold = 0.9;
+      double threshold = 0.05*thro_A;
+	  if(threshold<1) threshold = 1;
 	  itercompute = 0;
 	  
 	  // Program Main loop ====================================================
@@ -2902,7 +2920,7 @@ namespace graphlab {
 		if(rmi.procid() == 0 && print_this_round) {
 		  logstream(LOG_EMPH)
 			<< rmi.procid() << ": Starting iteration: " << iteration_counter
-			<< " lastact "<<lastactive
+			//<< " lastact "<<lastactive
 			<< " at "<<globaltimer.current_time_millis()
 			<< std::endl;
 		  last_print = elapsed_seconds();
@@ -2931,8 +2949,6 @@ namespace graphlab {
   
 		// if (rmi.procid() == 0) std::cout << "Receive messages..." << std::endl;
 		num_active_vertices = 0;
-		//xie insert
-		num_active_mirrors = 0;
 		//double time_rstart = globaltimer.current_time_millis();
 		
 		run_synchronous( &xadaptive_engine::receive_messages );
@@ -2965,7 +2981,9 @@ namespace graphlab {
 		double time_rend = globaltimer.current_time_millis();
   		//xie insert
   		//================================================================
-		
+		//if (rmi.procid() == 0 )
+		//		logstream(LOG_EMPH)<< rmi.procid() << ": -s"<<iteration_counter<<"-"
+		//		<<" active "<<total_active_vertices<<std::endl;
 		
 		// clear counters
 		//each_iteration_signal = 0;
@@ -3090,7 +3108,7 @@ namespace graphlab {
 				}
 			}\
 			else if((avg_inc_rate<0)&&(
-				(thro_now*rate_AvsS<thro_A*threshold)
+				(thro_now*rate_AvsS<thro_A-threshold)
 			)){
 					if (rmi.procid() == 0 )
 						logstream(LOG_EMPH)<< rmi.procid() << ":iter "<< iteration_counter
@@ -3202,8 +3220,11 @@ namespace graphlab {
       execution_status::UNSET;
 
 
+	globaltimer.start();
+	x_start_time_m = globaltimer.current_time_millis();	// start time
+	
 	if((running_mode==X_ADAPTIVE)&&(current_engine == X_SYNC)){
-		if(graph.get_async_thro()-0<0.01){
+		if(graph.get_async_thro()-0<0.001){
 			if (rmi.procid() == 0)
 				logstream(LOG_EMPH) 
 				<< "MSYNC: Prepare to start with sync schedule without more information of async throughput, engine stops. "
@@ -3212,18 +3233,17 @@ namespace graphlab {
 		}
 		else thro_A = graph.get_async_thro();
 	}
+	else if(running_mode==X_S_ADAPTIVE){
+		xstart();
+		current_engine = X_SYNC;
+	}
 	
-
-				
-
-	globaltimer.start();
-	x_start_time_m = globaltimer.current_time_millis();	// start time
 	if(current_engine == X_SYNC)
 		//begin with SYNC engine
     	termination_reason = sstart();
-	else 
+	else {
 		termination_reason = xstart();
-
+	}
 
 	while(termination_reason==execution_status::MODE_SWITCH){
 		//try to switch engines
@@ -3252,12 +3272,9 @@ namespace graphlab {
 		    has_message.clear();
 		    has_gather_accum.clear();
 		    has_cache.clear();			//xie insert: haven't implement cache support
-		    active_superstep.clear();
-		    active_minorstep.clear();
 			each_iteration_signal = 0;
 			each_iteration_nmsg = 0;
 			termination_reason = sstart();
-	
 			}
 		}
 
@@ -3301,7 +3318,7 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   exchange_messages(const size_t thread_id) {
-	double timercountstart  = globaltimer.current_time_millis();
+	//double timercountstart  = globaltimer.current_time_millis();
 	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
@@ -3334,7 +3351,7 @@ namespace graphlab {
       }
     } // end of loop over vertices to send messages
 
-	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+	//itercompute +=(globaltimer.current_time_millis()-timercountstart);
 			
     message_exchange.partial_flush(thread_id);
     // Finish sending and receiving all messages
@@ -3349,7 +3366,7 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   receive_messages(const size_t thread_id) {
-  	double timercountstart  = globaltimer.current_time_millis();
+  	//double timercountstart  = globaltimer.current_time_millis();
 	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
@@ -3387,8 +3404,6 @@ namespace graphlab {
           vertex_programs[lvid].init(context, vertex, messages[lvid]);
           // clear the message to save memory
           //messages[lvid] = message_type();	xie modify
-		  //xie insert
-		  nactive_mirrors += graph.l_vertex(lvid).num_mirrors();
 	
 		  if (sched_allv) continue;
           // Determine if the gather should be run
@@ -3404,11 +3419,9 @@ namespace graphlab {
       }
     }
 
-	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+	//itercompute +=(globaltimer.current_time_millis()-timercountstart);
 
     num_active_vertices += nactive_inc;
-	//xie insert
-	num_active_mirrors += nactive_mirrors;
 	
     vprog_exchange.partial_flush(thread_id);
     // Flush the buffer and finish receiving any remaining vertex
@@ -3427,7 +3440,7 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   execute_gathers(const size_t thread_id) {
-  	double timercountstart  = globaltimer.current_time_millis();
+  	//double timercountstart  = globaltimer.current_time_millis(); //xie insert
 	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
@@ -3522,7 +3535,7 @@ namespace graphlab {
       }
     } // end of loop over vertices to compute gather accumulators
     
-	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+	//itercompute +=(globaltimer.current_time_millis()-timercountstart);//xie insert
 	
     per_thread_compute_time[thread_id] += ti.current_time();
     gather_exchange.partial_flush(thread_id);
@@ -3537,7 +3550,7 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   execute_applys(const size_t thread_id) {
-  	double timercountstart  = globaltimer.current_time_millis();
+  	//double timercountstart  = globaltimer.current_time_millis();
 	
     context_type context(*this, graph);
     const bool TRY_TO_RECV = true;
@@ -3597,7 +3610,7 @@ namespace graphlab {
       }
     } // end of loop over vertices to run apply
 
-	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+	//itercompute +=(globaltimer.current_time_millis()-timercountstart);
 
     per_thread_compute_time[thread_id] += ti.current_time();
     vprog_exchange.partial_flush(thread_id);
@@ -3617,7 +3630,7 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   execute_scatters(const size_t thread_id) {
-  	double timercountstart  = globaltimer.current_time_millis();
+  	//double timercountstart  = globaltimer.current_time_millis();
 	
     context_type context(*this, graph);
     timer ti;
@@ -3678,7 +3691,7 @@ namespace graphlab {
       } // end of if active on this minor step
     } // end of loop over vertices to complete scatter operation
     
-	itercompute +=(globaltimer.current_time_millis()-timercountstart);
+	//itercompute +=(globaltimer.current_time_millis()-timercountstart);
 
 	//xie insert
 	each_iteration_signal += local_signal;
@@ -3772,7 +3785,7 @@ namespace graphlab {
   template<typename VertexProgram>
   void xadaptive_engine<VertexProgram>::
   recv_gathers(const bool try_to_recv) {
-  	double timercountstart  = globaltimer.current_time_millis();
+  	//double timercountstart  = globaltimer.current_time_millis();
 	
     procid_t procid(-1);
     typename gather_exchange_type::buffer_type buffer;

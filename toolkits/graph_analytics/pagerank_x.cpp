@@ -316,12 +316,6 @@ int main(int argc, char** argv) {
                false,     // do not save vertices
                true);   // save edges
     }
-    else if (savetype == "vertex") {
-    graph.save(saveprefix, pagerank_writer(),
-               false,    // do not gzip
-               true,     // save vertices
-               false);   // do not save edges
-    }
     else if (savetype == "all") {
     graph.save(saveprefix + "_edge", pagerank_writer(),
                false,    // do not gzip
@@ -334,6 +328,13 @@ int main(int argc, char** argv) {
                true,     // save vertices
                false,    // do not save edges
                1);       // one file per machine
+    }
+	else //(savetype == "vertex") 
+	{
+    graph.save(saveprefix, pagerank_writer(),
+               false,    // do not gzip
+               true,     // save vertices
+               false);   // do not save edges
     }
   }
   

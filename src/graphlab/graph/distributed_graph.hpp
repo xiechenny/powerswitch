@@ -431,6 +431,9 @@ namespace graphlab {
       typedef distributed_graph graph_type;
       distributed_graph& graph_ref;
       lvid_type lvid;
+	  bool noeffect;		//xie insert
+	  vertex_data_type &tmpdata;	//xie insert
+
 
       /// \cond GRAPHLAB_INTERNAL
       /** \brief Constructs a vertex_type object with local vid
@@ -441,8 +444,20 @@ namespace graphlab {
        * \param lvid The local VID of the vertex to be accessed
        */
       vertex_type(distributed_graph& graph_ref, lvid_type lvid):
-            graph_ref(graph_ref), lvid(lvid) { }
+            graph_ref(graph_ref), lvid(lvid),noeffect(false),tmpdata(graph_ref.get_local_graph().vertex_data(lvid)){}
       /// \endcond
+
+
+	  //xie insert ==============================
+	  void set_tmpdata(vertex_data_type &tdata){
+		tmpdata = tdata;
+		noeffect = true;
+	  }
+	  void clear_noeffect(){
+	  	noeffect= false; 
+	  }
+	  //xie insert end ======================
+	  
 
       /// \brief Compares two vertex_type's for equality. Returns true
       //  if they reference the same vertex and false otherwise.
@@ -457,6 +472,8 @@ namespace graphlab {
 
       /// \brief Returns a mutable reference to the data on the vertex
       vertex_data_type& data() {
+        if(noeffect)	//xie insert : no effect during sampling 
+			return tmpdata;
         return graph_ref.get_local_graph().vertex_data(lvid);
       }
 
@@ -2651,8 +2668,10 @@ namespace graphlab {
 
       /// \brief Returns a reference to the data on the local vertex
       vertex_data_type& data() {
+      
         return graph_ref.get_local_graph().vertex_data(lvid);
       }
+
 
       /** \brief Returns the number of in edges on the
        *         local graph of this local vertex
