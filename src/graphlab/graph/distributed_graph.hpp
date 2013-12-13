@@ -88,6 +88,12 @@
 #include <graphlab/graph/ingress/distributed_constrained_random_ingress.hpp>
 
 
+//xie merges
+#include <graphlab/graph/ingress/distributed_hybrid_ingress.hpp>
+#include <graphlab/graph/ingress/distributed_hybrid_ginger_ingress.hpp>
+#include <graphlab/graph/graph_hash.hpp>
+
+
 #include <graphlab/util/hopscotch_map.hpp>
 
 #include <graphlab/util/fs_util.hpp>
@@ -405,10 +411,21 @@ namespace graphlab {
     friend class distributed_identity_ingress<VertexData, EdgeData>;
     friend class distributed_oblivious_ingress<VertexData, EdgeData>;
     friend class distributed_constrained_random_ingress<VertexData, EdgeData>;
+	// xie merges
+	friend class distributed_hybrid_ingress<VertexData, EdgeData>;
+	friend class distributed_hybrid_ginger_ingress<VertexData, EdgeData>;
 
     typedef graphlab::vertex_id_type vertex_id_type;
     typedef graphlab::lvid_type lvid_type;
     typedef graphlab::edge_id_type edge_id_type;
+
+	//xie merges
+	enum zone_type {HIGH_MASTER = 0, LOW_MASTER, 
+      HIGH_MIRROR, LOW_MIRROR, NUM_ZONE_TYPES};
+
+    enum cuts_type {VERTEX_CUTS = 0, EDGE_CUTS, HYBRID_CUTS, HYBRID_GINGER_CUTS,
+      ZONE_CUTS, NUM_CUTS_TYPES};
+	
 
     struct vertex_type;
     typedef bool edge_list_type;
@@ -627,6 +644,7 @@ namespace graphlab {
                       const graphlab_options& opts = graphlab_options()) :
       rpc(dc, this), finalized(false), vid2lvid(),
       nverts(0), nedges(0), local_own_nverts(0), nreplicas(0),
+      how_cuts(VERTEX_CUTS),//xie merges
       ingress_ptr(NULL), 
 #ifdef _OPENMP
       vertex_exchange(dc, omp_get_max_threads()), 
@@ -651,6 +669,16 @@ namespace graphlab {
       size_t bufsize = 50000;
       bool usehash = false;
       bool userecent = false;
+
+	  //xie merges 
+	  // hybrid cut
+      size_t threshold = 100;
+      // ginger heuristic
+      size_t interval = std::numeric_limits<size_t>::max();
+      size_t nedges = 0;
+      size_t nverts = 0;
+
+	  
       std::string ingress_method = "";
       std::vector<std::string> keys = opts.get_graph_args().get_option_keys();
       foreach(std::string opt, keys) {
@@ -665,9 +693,31 @@ namespace graphlab {
             logstream(LOG_EMPH) << "Disable parallel ingress. Graph will be streamed through one node."
               << std::endl;
         }
-        /**
-         * These options below are deprecated.
-         */
+		//xie merges
+		else if (opt == "threshold") {
+          opts.get_graph_args().get_option("threshold", threshold);
+          if (rpc.procid() == 0)
+            logstream(LOG_EMPH) << "Graph Option: threshold = "
+                                << threshold << std::endl;
+        } else if (opt == "interval") {
+          opts.get_graph_args().get_option("interval", interval);
+          if (rpc.procid() == 0)
+            logstream(LOG_EMPH) << "Graph Option: interval = "
+                                << interval << std::endl;
+        }  else if (opt == "nedges") {
+          opts.get_graph_args().get_option("nedges", nedges);
+          if (rpc.procid() == 0)
+            logstream(LOG_EMPH) << "Graph Option: nedges = "
+                                << nedges << std::endl;
+        } else if (opt == "nverts") {
+          opts.get_graph_args().get_option("nverts", nverts);
+          if (rpc.procid() == 0)
+            logstream(LOG_EMPH) << "Graph Option: nverts = "
+                                << nverts << std::endl;  
+        }
+      /**
+           * These options below are deprecated.
+           */
         else if (opt == "bufsize") {
           opts.get_graph_args().get_option("bufsize", bufsize);
            if (rpc.procid() == 0)
@@ -687,7 +737,11 @@ namespace graphlab {
           logstream(LOG_ERROR) << "Unexpected Graph Option: " << opt << std::endl;
         }
     }
-      set_ingress_method(ingress_method, bufsize, usehash, userecent);
+
+	  //xie merges
+	  set_ingress_method(ingress_method, bufsize, usehash, userecent,
+        threshold, nedges, nverts, interval);
+      //set_ingress_method(ingress_method, bufsize, usehash, userecent);
     }
 
   public:
@@ -2365,6 +2419,11 @@ namespace graphlab {
     struct vertex_record {
       /// The official owning processor for this vertex
       procid_t owner;
+
+	  //xie merges
+	  /// The type of vertex
+      zone_type type;
+	  
       /// The local vid of this vertex on this proc
       vertex_id_type gvid;
       /// The number of in edges
@@ -2387,6 +2446,7 @@ namespace graphlab {
       void load(iarchive& arc) {
         clear();
         arc >> owner
+			>> type		//xie merges
             >> gvid
             >> num_in_edges
             >> num_out_edges
@@ -2395,11 +2455,24 @@ namespace graphlab {
 
       void save(oarchive& arc) const {
         arc << owner
+			<< type		//xie merges
             << gvid
             << num_in_edges
             << num_out_edges
             << _mirrors;
       } // end of save
+
+	  //xie merges
+	  bool operator==(const vertex_record& other) const {
+        return (
+            (owner == other.owner) &&
+            (gvid == other.gvid)  &&
+            (num_in_edges == other.num_in_edges) &&
+            (num_out_edges == other.num_out_edges) && 
+            (_mirrors == other._mirrors)
+            );
+      }
+	  
     }; // end of vertex_record
 
     void set_async_thro(double thro) {
@@ -2877,6 +2950,11 @@ namespace graphlab {
     mutable dc_dist_object<distributed_graph> rpc;
 
   public:
+  	
+	//xie merges
+	cuts_type get_cuts_type() const { return how_cuts; }
+	void set_cuts_type(cuts_type type) { how_cuts = type; }
+		  
 
     // For the warp engine to find the remote instances of this class
     size_t get_rpc_obj_id() {
@@ -2884,6 +2962,10 @@ namespace graphlab {
     }
 
   private:
+	//xie merges
+	/** The cut type */
+    cuts_type how_cuts;
+	
     bool finalized;
 
     /** The local graph data */
@@ -2928,8 +3010,12 @@ namespace graphlab {
     lock_manager_type lock_manager;
 
     void set_ingress_method(const std::string& method,
-        size_t bufsize = 50000, bool usehash = false, bool userecent = false) {
-      if(ingress_ptr != NULL) { delete ingress_ptr; ingress_ptr = NULL; }
+        size_t bufsize = 50000, bool usehash = false, bool userecent = false,//) {
+	  //xie merges
+	    size_t threshold = 100, size_t nedges = 0, size_t nverts = 0,
+        size_t interval = std::numeric_limits<size_t>::max()) {
+        
+	  if(ingress_ptr != NULL) { delete ingress_ptr; ingress_ptr = NULL; }
       if (method == "oblivious") {
         if (rpc.procid() == 0) logstream(LOG_EMPH) << "Use oblivious ingress, usehash: " << usehash
           << ", userecent: " << userecent << std::endl;
@@ -2943,7 +3029,18 @@ namespace graphlab {
       } else if (method == "pds") {
         if (rpc.procid() == 0)logstream(LOG_EMPH) << "Use pds ingress" << std::endl;
         ingress_ptr = new distributed_constrained_random_ingress<VertexData, EdgeData>(rpc.dc(), *this, "pds");
-      } else {
+	  //xie merges
+	  } else if (method == "hybrid") {
+        if (rpc.procid() == 0) logstream(LOG_EMPH) << "Use hybrid ingress" << std::endl;
+        ingress_ptr = new distributed_hybrid_ingress<VertexData, EdgeData>(rpc.dc(), *this, threshold);
+        set_cuts_type(HYBRID_CUTS);
+      } else if (method == "hybrid_ginger") {
+        if (rpc.procid() == 0) logstream(LOG_EMPH) << "Use hybrid ginger ingress" << std::endl;
+        ASSERT_GT(nedges, 0); ASSERT_GT(nverts, 0);
+        ingress_ptr = new distributed_hybrid_ginger_ingress<VertexData, EdgeData>(rpc.dc(), *this, threshold, nedges, nverts, interval);
+        set_cuts_type(HYBRID_GINGER_CUTS);
+	  //xie merges end
+	  } else {
         // use default ingress method if none is specified
         std::string ingress_auto="";
         size_t num_shards = rpc.numprocs();
