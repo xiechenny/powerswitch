@@ -1868,6 +1868,7 @@ namespace graphlab {
 					  size_t tmpact = xmessages.num_act();
 					  size_t tmpexec = programs_executed.value;	
 					  size_t now = iteration_counter%11; 
+					  double tmpthro = (tmpexec-lastexecuted)/durtime;
 					  
 					  if(tmpact>=tmpexec)
 					  	active[now] = tmpact-tmpexec;
@@ -1885,34 +1886,37 @@ namespace graphlab {
 					  }
 					  }
 
-					  /*if(rmi.procid()==0)
+					  
+					  /* if(rmi.procid()==0)
 							logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-								<<" thro "<<(tmpexec-lastexecuted)/durtime
-								<<" active "<<active[now]
-								<<" executed "<<tmpexec
+								<<" thro "<<tmpthro
+								<<" lastadd "<<lastadd
+								<<" thro_A*durtime "<<thro_A*threshold*durtime
 								<<" time_at "<<globaltimer.current_time_millis()/1000
-								<<std::endl;
-						*/
+								<<std::endl;*/
+					  if(thro_A<tmpthro)  thro_A = tmpthro;//threshold;
+						
 					  if(running_mode==X_ADAPTIVE){
 						  //double comparable = thro_A*durtime/rate_AvsS;
 						  if((avg_inc_rate>0)&&(iteration_counter>3)&&(lastadd>(thro_A*threshold*durtime)))
 						  {
 						  	  count++;
 							  if(count>1){
-						  	  first_time_start = false;
-							  //set prepare to stop
-							  stop_async = true;
-							  //if(rmi.procid()==0)
-							  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
-							  		<<avg_inc_rate
-									<<" ,lastadd "<<lastadd
-									<<" ,executed "<<tmpexec-lastexecuted
-									<<" ,iter "<<iteration_counter
-									<<std::endl;
-							  countoverhead = globaltimer.current_time_millis();
-							  // put everyone in switch mode
-							  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
-							 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
+							  	  first_time_start = false;
+								  //set prepare to stop
+								  stop_async = true;
+								  //if(rmi.procid()==0)
+								  logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ---"<<iteration_counter<<"--- "
+								  		<<avg_inc_rate
+										<<" ,lastadd "<<lastadd
+										<<" ,executed "<<tmpexec-lastexecuted
+										//<<" ,iter "<<iteration_counter
+										<<" ,thro_a "<<thro_A
+										<<std::endl;
+								  countoverhead = globaltimer.current_time_millis();
+								  // put everyone in switch mode
+								  for (procid_t i = 0;i < rmi.dc().numprocs(); ++i)
+								 		  rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
 
 							  }
 						  }
@@ -2082,17 +2086,20 @@ namespace graphlab {
 					if(rmi.procid()==0)
 						logstream(LOG_INFO)<< "Get async thro now: "<<thro_A<<std::endl;
 			  }
-			  else termination_reason = execution_status::MODE_SWITCH;
-			  rmi.full_barrier();
+			  else 
 			  {	 
+				  double local_thro = thro_A;
+				  rmi.all_reduce(local_thro);
+				  thro_A = local_thro/rmi.numprocs();
+			      termination_reason = execution_status::MODE_SWITCH;
 				  if(rmi.procid()==0)
-				  logstream(LOG_INFO)<< "from async to sync now: "<<stop_async
+				  logstream(LOG_INFO)<< "from async to sync now: thro "<<thro_A
 				  //<<" added "<<xmessages.num_act()
 				  <<std::endl;
-				  
 				  //messages should be sent into next mode then clear
-				  //next_mode_active_vertex = xmessages.active_v;
+				  next_mode_active_vertex = xmessages.active_v;
 			  }
+			  rmi.full_barrier(); 
 			}
 		    //xie insert: end of local switch range
 		  
@@ -2537,6 +2544,7 @@ namespace graphlab {
 	rate_AvsS=0.75;
 	endgame_mode = true;
 	tasknum = 5000;
+	countoverhead = 0;
 
 	//xie insert : set sync & async opts
 	xset_options(opts);
@@ -2882,7 +2890,7 @@ namespace graphlab {
 
 	  float start_this_turn;		// used for set least execution time
 	  size_t total_act = 0;
-	  
+
 	  // xie insert: SYNC engine compution start
 	  aggregator.start();
 	  rmi.barrier();
@@ -2904,6 +2912,7 @@ namespace graphlab {
       double threshold = 0.05*thro_A;
 	  if(threshold<1) threshold = 1;
 	  itercompute = 0;
+	  
 	  
 	  // Program Main loop ====================================================
 	  while(iteration_counter <= max_iterations && !force_abort ) {
@@ -3048,17 +3057,6 @@ namespace graphlab {
 
 				/*if (rmi.procid() == 0 )
 				logstream(LOG_EMPH)<< rmi.procid() << ": -s"<<iteration_counter<<"-"
-									<<" itercompute "<<itercompute
-									<<" this "<<this_iter_time
-									<<" diff "<<this_iter_time-itercompute
-									<<" c "<<c
-									//<<" llasta "<<prelastactive
-									<<" lasta "<<lastactive
-									<<" thisa "<<total_active_vertices
-									<<" tk "<<tmpk
-									<<" tc "<<tmpc
-									<<" k "<<k
-									<<" c "<<c
 									<<" l_thro "<<thro
 									<<" p_thro "<<thro_now
 									<<" timeat "<<globaltimer.current_time_millis()/1000
@@ -3234,8 +3232,13 @@ namespace graphlab {
 		else thro_A = graph.get_async_thro();
 	}
 	else if(running_mode==X_S_ADAPTIVE){
-		xstart();
-		current_engine = X_SYNC;
+		if(current_engine == X_SYNC){
+			xstart();
+			current_engine = X_SYNC;
+		}
+		else{
+			running_mode=X_ADAPTIVE;
+		}
 	}
 	
 	if(current_engine == X_SYNC)
