@@ -2742,26 +2742,26 @@ namespace graphlab {
                   const message_type& message) {
     // xie insert: SYNC
     if(current_engine==X_SYNC){
-		const lvid_type lvid = vertex.local_id();
+			const lvid_type lvid = vertex.local_id();
 		
-		vlocks[lvid].lock();
+			vlocks[lvid].lock();
 		
-		if( has_message.get(lvid) ) {
-			messages[lvid] += message;
-		} else {
+			if( has_message.get(lvid) ) {
+				messages[lvid] += message;
+			} else {
 		    messages[lvid] = message;
 		    has_message.set_bit(lvid);
 
-			//xie insert;
-			asy_start_active_v.set_bit(lvid);
-			vertex_data[lvid] = vertex.data();
+				//xie insert;
+				asy_start_active_v.set_bit(lvid);
+				vertex_data[lvid] = vertex.data();
+			}
+			vlocks[lvid].unlock();
+    }
+		// xie insert: ASYNC
+		else {
+			xinternal_signal(vertex,message);
 		}
-		vlocks[lvid].unlock();
-    	}
-	// xie insert: ASYNC
-	else{
-		xinternal_signal(vertex,message);
-	}
   } // end of internal_signal
 
 
@@ -3106,7 +3106,7 @@ namespace graphlab {
 					termination_reason = execution_status::MODE_SWITCH;
 					break;
 				}
-			}\
+			}
 			else if((avg_inc_rate<0)&&(
 				(thro_now*rate_AvsS<thro_A-threshold)
 			)){
@@ -3224,10 +3224,10 @@ namespace graphlab {
 	x_start_time_m = globaltimer.current_time_millis();	// start time
 	
 	if((running_mode==X_ADAPTIVE)&&(current_engine == X_SYNC)){
-		if(graph.get_async_thro()-0<0.001){
+		if(graph.get_async_thro()-0.0<0.001){
 			if (rmi.procid() == 0)
-				logstream(LOG_EMPH) 
-				<< "MSYNC: Prepare to start with sync schedule without more information of async throughput, engine stops. "
+				logstream(LOG_NONE) 
+				<< "MSYNC: Prepare to start with sync schedule without any information of async throughput, engine stops. "
 				<<std::endl;
 				return execution_status::FORCED_ABORT;
 		}
