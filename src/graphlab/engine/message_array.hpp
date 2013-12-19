@@ -111,6 +111,7 @@ namespace graphlab {
       double priority;
       size_t lockidx = get_lock_idx(idx);
       lock_array[lockidx].lock();
+
 	  //xie insert
 	  active_v.set_bit(idx);
 	  
@@ -122,6 +123,19 @@ namespace graphlab {
       if (message_priority) (*message_priority) = priority;
       return ret;
     } 
+
+	//xie insert
+	bool light_add(const size_t idx, 
+             const value_type& val,
+             double* message_priority = NULL) {
+      double priority;
+	  active_v.set_bit(idx);
+      bool ret = message_vector[idx].add(val, priority);
+	  actcounter[get_lock_idx(idx)] += ret;
+      if (message_priority) (*message_priority) = priority;
+      return ret;
+    } 
+    
 
     /** Returns the current message stored at idx and 
      * clears the message.
@@ -145,6 +159,21 @@ namespace graphlab {
       lock_array[lockidx].unlock();
       return has_val;
     }
+
+	bool light_get(const size_t idx,
+             value_type& ret_val) {
+      bool has_val = false;
+    
+      if (!message_vector[idx].empty) {
+        ret_val = message_vector[idx].value;
+		//xie insert
+		active_v.clear_bit(idx);
+        has_val = true;
+      }
+      return has_val;
+    }
+	
+	
 
     /** Returns the current message stored at idx. 
      * Returns true on success and false if there is no message
@@ -235,6 +264,17 @@ namespace graphlab {
       for (size_t i = 0; i < message_vector.size(); ++i) clear(i);
 	  active_v.clear();
     }
+
+  	void light_clear() {
+	   for (size_t i = 0; i < 65536; ++i) {
+		 actcounter[i] = 0;
+	   }
+	 
+	   for (size_t i = 0; i < message_vector.size(); ++i){
+		  message_vector[i].clear(); 
+	   }
+	   active_v.clear();
+	 }
 
     
   }; // end of vertex map
