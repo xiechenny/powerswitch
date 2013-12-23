@@ -575,6 +575,7 @@ namespace graphlab
         double throughput;
         double avgthroughput;
         size_t avgcount;
+        bool needsample;
 
 
         //manual switch
@@ -895,6 +896,7 @@ namespace graphlab
                     opts.get_engine_args().get_option("a_thro", thro_A);
                     if(running_mode == X_ADAPTIVE)
                         thro_A = thro_A*0.9;
+                    graph.set_async_thro(thro_A);
                     if (rmi.procid() == 0)
                         logstream(LOG_EMPH) << "Engine Option: set ASYNC throughput: "<< thro_A << std::endl;
 
@@ -1399,8 +1401,6 @@ namespace graphlab
             //xie insert
             if(stop_async)
                 return true;
-            //logstream(LOG_INFO) << rmi.procid() << "-" << threadid << ": " << "cratical before " << std::endl;
-
 
             consensus->begin_done_critical_section(threadid);
             sched_status::status_enum stat =
@@ -1824,7 +1824,7 @@ namespace graphlab
             }
             xrelease_exclusive_access_to_vertex(lvid);
             programs_executed.inc();
-           
+
         }
 
 
@@ -1971,13 +1971,13 @@ namespace graphlab
 
 
                             /* if(rmi.procid()==0)
-			                              logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
-			                                  <<" thro "<<tmpthro
-			                                  <<" lastadd "<<lastadd
-			                                  <<" thro_A*durtime "<<thro_A*threshold*durtime
-			                                  <<" time_at "<<globaltimer.current_time_millis()/1000
-			                                  <<std::endl;*/
-                            if(thro_A<tmpthro)  thro_A = tmpthro;//threshold;
+                                          logstream(LOG_EMPH)<< rmi.procid() << ": ------- sample ---"<<iteration_counter<<"--- "
+                                              <<" thro "<<tmpthro
+                                              <<" lastadd "<<lastadd
+                                              <<" thro_A*durtime "<<thro_A*threshold*durtime
+                                              <<" time_at "<<globaltimer.current_time_millis()/1000
+                                              <<std::endl;*/
+                            if((needsample)&&(thro_A<tmpthro))  thro_A = tmpthro;//threshold;
 
                             if(running_mode==X_ADAPTIVE)
                             {
@@ -2024,7 +2024,7 @@ namespace graphlab
                                 logstream(LOG_EMPH)<< rmi.procid() << ": -------start switch ------ "<<avg_inc_rate<<", task "<<programs_executed.value<<std::endl;
                                 countoverhead = globaltimer.current_time_millis();
                                 // put everyone in endgame
-                                
+
                                 for (procid_t i = 0; i < rmi.dc().numprocs(); ++i)
                                     rmi.remote_call(i, &xadaptive_engine::xset_stop_async);
                             }
@@ -2173,9 +2173,13 @@ namespace graphlab
                 }
                 else
                 {
-                    double local_thro = thro_A;
-                    rmi.all_reduce(local_thro);
-                    thro_A = local_thro/rmi.numprocs();
+                    if(needsample)
+                    {
+                        double local_thro = thro_A;
+                        rmi.all_reduce(local_thro);
+                        thro_A = local_thro/rmi.numprocs();
+                        needsample = false;
+                    }
                     termination_reason = execution_status::MODE_SWITCH;
                     if(rmi.procid()==0)
                         logstream(LOG_INFO)<< "from async to sync now: thro "<<thro_A
@@ -2201,7 +2205,7 @@ namespace graphlab
             //logstream(LOG_INFO)<< "Last task end at "<<tall<<std::endl;
 
             rmi.cout() << "Completed Tasks: " << programs_executed.value << std::endl;
-			
+
             size_t numjoins = xmessages.num_joins();
             rmi.all_reduce(numjoins);
             rmi.cout() << "Schedule Joins: " << numjoins << std::endl;
@@ -2778,7 +2782,7 @@ namespace graphlab
                 resize();
             rmi.barrier();
             internal_signal_rpc(gvid, message);
-            xinternal_signal_gvid(gvid, message);
+            if(running_mode==X_S_ADAPTIVE)  xinternal_signal_gvid(gvid, message);
             rmi.barrier();
         }
         // xie insert ASYNC
@@ -2806,7 +2810,7 @@ namespace graphlab
                     internal_signal(vertex_type(graph.l_vertex(lvid)), message);
                 }
             }
-            xsignal_all(message, order);
+            if(running_mode==X_S_ADAPTIVE)  xsignal_all(message, order);
         }
         // xie insert: ASYNC
         else
@@ -2833,7 +2837,7 @@ namespace graphlab
                     internal_signal(vertex_type(graph.l_vertex(lvid)), message);
                 }
             }
-            xsignal_vset(vset, message, order);
+            if(running_mode==X_S_ADAPTIVE)  xsignal_vset(vset, message, order);
         }
         // xie insert: ASYNC
         else
@@ -3028,7 +3032,6 @@ namespace graphlab
         {
             //signal
             s_inner_signal_vset();
-            xmessages.light_clear();
         }
 
         if (rmi.procid() == 0)
@@ -3063,7 +3066,7 @@ namespace graphlab
         double c = -1;
         double threshold = 0.05*thro_A;
         if(threshold<1) threshold = 1;
-		else if(threshold>5) threshold = 5;
+        else if(threshold>5) threshold = 5;
         //itercompute = 0;
 
         exec_time = globaltimer.current_time_millis();
@@ -3096,45 +3099,45 @@ namespace graphlab
             active_superstep.clear();
             active_minorstep.clear();
             has_gather_accum.clear();
-			num_active_vertices = 0;
+            num_active_vertices = 0;
             rmi.barrier();
 
             // Exchange Messages --------------------------------------------------
             // Exchange any messages in the local message vectors
             // if (rmi.procid() == 0) std::cout << "Exchange messages..." << std::endl;
-			bk_ti.start();
+            bk_ti.start();
             run_synchronous( &xadaptive_engine::exchange_messages );
-			exch_time += bk_ti.current_time();
-			
+            exch_time += bk_ti.current_time();
+
             /**
-	             * Post conditions:
-	             *   1) only master vertices have messages
-	             */
+                 * Post conditions:
+                 *   1) only master vertices have messages
+                 */
             // Receive Messages ---------------------------------------------------
             // Receive messages to master vertices and then synchronize
             // vertex programs with mirrors if gather is required
             //
 
-			bk_ti.start();
+            bk_ti.start();
             run_synchronous( &xadaptive_engine::receive_messages );
             if (sched_allv)
             {
                 active_minorstep.fill();
             }
             has_message.clear();
-			recv_time += bk_ti.current_time();
-			
+            recv_time += bk_ti.current_time();
+
             /**
-	             * Post conditions:
-	             *   1) there are no messages remaining
-	             *   2) All masters that received messages have their
-	             *      active_superstep bit set
-	             *   3) All masters and mirrors that are to participate in the
-	             *      next gather phases have their active_minorstep bit
-	             *      set.
-	             *   4) num_active_vertices is the number of vertices that
-	             *      received messages.
-	             */
+                 * Post conditions:
+                 *   1) there are no messages remaining
+                 *   2) All masters that received messages have their
+                 *      active_superstep bit set
+                 *   3) All masters and mirrors that are to participate in the
+                 *      next gather phases have their active_minorstep bit
+                 *      set.
+                 *   4) num_active_vertices is the number of vertices that
+                 *      received messages.
+                 */
 
             // Check termination condition  ---------------------------------------
             size_t total_active_vertices = num_active_vertices;
@@ -3342,7 +3345,7 @@ namespace graphlab
         // Stop the aggregator
         aggregator.stop();
 
-		exec_time = globaltimer.current_time_millis()-exec_time;
+        exec_time = globaltimer.current_time_millis()-exec_time;
 
         if (rmi.procid() == 0)
         {
@@ -3388,7 +3391,7 @@ namespace graphlab
             if(graph.get_async_thro()-0.0<0.001)
             {
                 if (rmi.procid() == 0)
-                    logstream(LOG_NONE)
+                    logstream(LOG_ERROR)
                             << "MSYNC: Prepare to start with sync schedule without any information of async throughput, engine stops. "
                             <<std::endl;
                 return execution_status::FORCED_ABORT;
@@ -3401,14 +3404,17 @@ namespace graphlab
             {
                 xstart();
                 current_engine = X_SYNC;
+                needsample = false;
             }
             else
             {
                 running_mode=X_ADAPTIVE;
+                needsample = true;
             }
         }
 
-        if(current_engine == X_SYNC){
+        if(current_engine == X_SYNC)
+        {
             //begin with SYNC engine
             termination_reason = sstart();
         }
@@ -3424,9 +3430,10 @@ namespace graphlab
             if(current_engine == X_SYNC)
             {
                 //switch to ASYNC
-                scheduler_ptr->set_num_vertices(graph.num_local_vertices());				  
-				vertexlocks.clear();
-				program_running.clear();
+                xmessages.light_clear();
+                scheduler_ptr->set_num_vertices(graph.num_local_vertices());
+                vertexlocks.clear();
+                program_running.clear();
                 hasnext.clear();
                 if (use_cache)
                     has_cache.clear();
@@ -3453,7 +3460,7 @@ namespace graphlab
                 termination_reason = sstart();
             }
         }
-		
+
         return termination_reason;
 
     } // end of start
